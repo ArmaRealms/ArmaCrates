@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+@SuppressWarnings({"UnstableApiUsage"})
 public class PlaceholderAPISupport extends PlaceholderExpansion {
 
     @NotNull
@@ -31,10 +32,9 @@ public class PlaceholderAPISupport extends PlaceholderExpansion {
             for (Crate crate : crazyHandler.getCrateManager().getUsableCrates()) {
                 if (identifier.equalsIgnoreCase(crate.getName())) {
                     return numberFormat.format(userManager.getVirtualKeys(human.getUniqueId(), crate.getName()));
-                } else {
-                    return "0";
                 }
             }
+            return "0";
         }
         return "N/A";
     }
@@ -52,18 +52,18 @@ public class PlaceholderAPISupport extends PlaceholderExpansion {
     @Override
     @NotNull
     public String getIdentifier() {
-        return this.plugin.getName().toLowerCase();
+        return plugin.getPluginMeta().getName().toLowerCase();
     }
 
     @Override
     @NotNull
     public String getAuthor() {
-        return this.plugin.getDescription().getAuthors().toString();
+        return plugin.getPluginMeta().getAuthors().toString();
     }
 
     @Override
     @NotNull
     public String getVersion() {
-        return this.plugin.getDescription().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
 }
