@@ -1,7 +1,7 @@
 [versions]
-kyori_version = "4.17.0"
-paperweight_version = "1.7.2"
-runpaper_version = "2.2.3"
+kyori_version = "4.23.0"
+paperweight_version = "2.0.0-beta.18"
+runpaper_version = "2.3.1"
 shadow_version = "8.3.2"
 modrinth_version = "2.8.7"
 hangar_version = "0.1.2"
