@@ -36,20 +36,20 @@ public class MiscUtils {
     public static final Random RANDOM = new Random();
     private static final CrazyCrates plugin = CrazyCrates.get();
 
-    public static void sendCommand(String command) {
-        Server server = plugin.getServer();
+    public static void sendCommand(final String command) {
+        final Server server = plugin.getServer();
 
-        ConsoleCommandSender console = server.getConsoleSender();
+        final ConsoleCommandSender console = server.getConsoleSender();
 
         server.dispatchCommand(console, command);
     }
 
-    public static void spawnFirework(Location location, Color color) {
-        Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
+    public static void spawnFirework(final Location location, final Color color) {
+        final Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK_ROCKET);
 
-        FireworkMeta fireworkMeta = firework.getFireworkMeta();
+        final FireworkMeta fireworkMeta = firework.getFireworkMeta();
 
-        FireworkEffect.@NotNull Builder effect = FireworkEffect.builder()
+        final FireworkEffect.@NotNull Builder effect = FireworkEffect.builder()
                 .with(FireworkEffect.Type.BALL)
                 .trail(false)
                 .flicker(false);
@@ -62,11 +62,11 @@ public class MiscUtils {
 
         firework.setFireworkMeta(fireworkMeta);
 
-        PersistentDataContainer fireworkData = firework.getPersistentDataContainer();
+        final PersistentDataContainer fireworkData = firework.getPersistentDataContainer();
 
         fireworkData.set(PersistentKeys.no_firework_damage.getNamespacedKey(), PersistentDataType.BOOLEAN, true);
 
-        Server server = plugin.getServer();
+        final Server server = plugin.getServer();
 
         server.getScheduler().scheduleSyncDelayedTask(plugin, firework::detonate, 3);
     }
@@ -76,14 +76,14 @@ public class MiscUtils {
      *
      * @return true if inventory is empty otherwise false.
      */
-    public static boolean isInventoryFull(Player player) {
+    public static boolean isInventoryFull(final Player player) {
         return player.getInventory().firstEmpty() == -1;
     }
 
     /**
      * Remove or subtract an item from a player's inventory.
      */
-    public static void removeItemStack(Player player, ItemStack item) {
+    public static void removeItemStack(final Player player, final ItemStack item) {
         if (item.getAmount() <= 1) {
             player.getInventory().removeItem(item);
             return;
@@ -93,20 +93,20 @@ public class MiscUtils {
     }
 
     // ElectronicBoy is the author.
-    public static HashMap<Integer, ItemStack> removeMultipleItemStacks(Inventory inventory, ItemStack... items) {
+    public static HashMap<Integer, ItemStack> removeMultipleItemStacks(final Inventory inventory, final ItemStack... items) {
         if (items != null) {
-            HashMap<Integer, ItemStack> leftover = new HashMap<>();
+            final HashMap<Integer, ItemStack> leftover = new HashMap<>();
 
             // TODO: optimization
 
             for (int i = 0; i < items.length; i++) {
-                ItemStack item = items[i];
+                final ItemStack item = items[i];
                 int toDelete = item.getAmount();
 
                 while (true) {
                     // Paper start - Allow searching entire contents
-                    ItemStack[] toSearch = inventory.getContents();
-                    int first = getFirstItem(item, false, toSearch);
+                    final ItemStack[] toSearch = inventory.getContents();
+                    final int first = getFirstItem(item, false, toSearch);
                     // Paper end
 
                     // Drat! we don't have this type in the inventory
@@ -115,8 +115,8 @@ public class MiscUtils {
                         leftover.put(i, item);
                         break;
                     } else {
-                        ItemStack itemStack = inventory.getItem(first);
-                        int amount = itemStack.getAmount();
+                        final ItemStack itemStack = inventory.getItem(first);
+                        final int amount = itemStack.getAmount();
 
                         if (amount <= toDelete) {
                             toDelete -= amount;
@@ -151,11 +151,11 @@ public class MiscUtils {
      * @return -1 or item amount.
      */
     @SuppressWarnings("SameParameterValue")
-    private static int getFirstItem(ItemStack item, boolean getAmount, ItemStack[] inventory) {
+    private static int getFirstItem(final ItemStack item, final boolean getAmount, final ItemStack[] inventory) {
         if (item == null) return -1;
 
         for (int i = 0; i < inventory.length; i++) {
-            ItemStack inventoryItem = inventory[i];
+            final ItemStack inventoryItem = inventory[i];
 
             if (inventoryItem != null) {
                 if ((getAmount && item.equals(inventoryItem)) || (!getAmount && item.isSimilar(inventoryItem)))
@@ -166,7 +166,7 @@ public class MiscUtils {
         return -1;
     }
 
-    public static void failedToTakeKey(CommandSender player, Crate crate) {
+    public static void failedToTakeKey(final CommandSender player, final Crate crate) {
         plugin.getServer().getLogger().warning("An error has occurred while trying to take a physical key from a player");
         plugin.getServer().getLogger().warning("Player: " + player.getName());
         plugin.getServer().getLogger().warning("Crate: " + crate.getName());
@@ -175,26 +175,26 @@ public class MiscUtils {
         player.sendMessage(MsgUtils.getPrefix("&cCommon reasons includes not having enough keys."));
     }
 
-    public static long pickNumber(long min, long max) {
+    public static long pickNumber(final long min, long max) {
         max++;
 
         try {
             // new Random() does not have a nextLong(long bound) method.
             return min + ThreadLocalRandom.current().nextLong(max - min);
-        } catch (IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             return min;
         }
     }
 
-    public static int randomNumber(int min, int max) {
+    public static int randomNumber(final int min, final int max) {
         return MiscUtils.useOtherRandom() ? min + ThreadLocalRandom.current().nextInt(max - min) : min + RANDOM.nextInt(max - min);
     }
 
     public static Enchantment getEnchantment(String enchantmentName) {
-        HashMap<String, String> enchantments = getEnchantmentList();
+        final HashMap<String, String> enchantments = getEnchantmentList();
         enchantmentName = stripEnchantmentName(enchantmentName);
 
-        for (Enchantment enchantment : Enchantment.values()) {
+        for (final Enchantment enchantment : Enchantment.values()) {
             try {
                 if (stripEnchantmentName(enchantment.getKey().getKey()).equalsIgnoreCase(enchantmentName)) {
                     return enchantment;
@@ -204,7 +204,7 @@ public class MiscUtils {
                         stripEnchantmentName(enchantments.get(enchantment.getName())).equalsIgnoreCase(enchantmentName))) {
                     return enchantment;
                 }
-            } catch (Exception ignore) {
+            } catch (final Exception ignore) {
                 // Ignored
             }
         }
@@ -212,12 +212,12 @@ public class MiscUtils {
         return null;
     }
 
-    private static String stripEnchantmentName(String enchantmentName) {
+    private static String stripEnchantmentName(final String enchantmentName) {
         return enchantmentName != null ? enchantmentName.replace("-", "").replace("_", "").replace(" ", "") : null;
     }
 
     private static HashMap<String, String> getEnchantmentList() {
-        HashMap<String, String> enchantments = new HashMap<>();
+        final HashMap<String, String> enchantments = new HashMap<>();
         enchantments.put("ARROW_DAMAGE", "Power");
         enchantments.put("ARROW_FIRE", "Flame");
         enchantments.put("ARROW_INFINITE", "Infinity");
@@ -256,7 +256,7 @@ public class MiscUtils {
     }
 
     public static ItemBuilder getRandomPaneColor() {
-        List<Material> panes = Arrays.asList(
+        final List<Material> panes = Arrays.asList(
                 Material.LIGHT_BLUE_STAINED_GLASS_PANE,
                 Material.MAGENTA_STAINED_GLASS_PANE,
                 Material.YELLOW_STAINED_GLASS_PANE,
@@ -295,7 +295,7 @@ public class MiscUtils {
      * Decides when the crate should start to slow down.
      */
     public static List<Integer> slowSpin(int full, int cut) {
-        List<Integer> slow = new ArrayList<>();
+        final List<Integer> slow = new ArrayList<>();
 
         for (int index = full; cut > 0; full--) {
             if (full <= index - cut || full >= index - cut) {

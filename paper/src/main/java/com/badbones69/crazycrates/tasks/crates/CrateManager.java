@@ -32,7 +32,6 @@ import com.badbones69.crazycrates.tasks.crates.types.RouletteCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WarCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WheelCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WonderCrate;
-import org.apache.commons.lang.WordUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -58,6 +57,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -141,7 +141,7 @@ public class CrateManager {
                             final boolean isEnabled = alternativeSection.getBoolean("Toggle");
 
                             if (isEnabled) {
-                                alternativePrize = new Prize(prizeSection.getString("DisplayName", WordUtils.capitalizeFully(prizeSection.getString("DisplayItem", "STONE").replaceAll("_", " "))), prizeSection.getName(), alternativeSection);
+                                alternativePrize = new Prize(prizeSection.getString("DisplayName", prizeSection.getString("DisplayItem", "STONE").toUpperCase(Locale.ROOT).replaceAll("_", " ")), prizeSection.getName(), alternativeSection);
                             }
                         }
 
@@ -248,7 +248,7 @@ public class CrateManager {
                                 final boolean isEnabled = alternativeSection.getBoolean("Toggle");
 
                                 if (isEnabled) {
-                                    alternativePrize = new Prize(prizeSection.getString("DisplayName", WordUtils.capitalizeFully(prizeSection.getString("DisplayItem", "STONE").replaceAll("_", " "))), prizeSection.getName(), alternativeSection);
+                                    alternativePrize = new Prize(prizeSection.getString("DisplayName", prizeSection.getString("DisplayItem", "STONE").toUpperCase(Locale.ROOT).replaceAll("_", " ")), prizeSection.getName(), alternativeSection);
                                 }
                             }
 

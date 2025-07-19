@@ -93,7 +93,7 @@ public class QuadCrateManager {
      * @param inHand        checks the hand of the player.
      * @param handler       the structure handler instance.
      */
-    public QuadCrateManager(Player player, Crate crate, KeyType keyType, Location spawnLocation, boolean inHand, StructureHandler handler) {
+    public QuadCrateManager(final Player player, final Crate crate, final KeyType keyType, final Location spawnLocation, final boolean inHand, final StructureHandler handler) {
         this.instance = this;
         this.player = player;
         this.crate = crate;
@@ -107,7 +107,7 @@ public class QuadCrateManager {
 
         this.handler = handler;
 
-        List<CrateParticles> particles = Arrays.asList(CrateParticles.values());
+        final List<CrateParticles> particles = Arrays.asList(CrateParticles.values());
         this.particle = particles.get(ThreadLocalRandom.current().nextInt(particles.size()));
         this.particleColor = getColors().get(ThreadLocalRandom.current().nextInt(getColors().size()));
 
@@ -144,7 +144,7 @@ public class QuadCrateManager {
         }
 
         // Check if the blocks are able to be changed.
-        List<Location> structureLocations;
+        final List<Location> structureLocations;
 
         structureLocations = this.handler.getBlocks(this.spawnLocation.clone());
 
@@ -152,7 +152,7 @@ public class QuadCrateManager {
         // Do not open the crate if the block is not able to be changed.
         assert structureLocations != null;
 
-        for (Location loc : structureLocations) {
+        for (final Location loc : structureLocations) {
             if (this.handler.getBlockBlackList().contains(loc.getBlock().getType())) {
                 this.player.sendMessage(Messages.needs_more_room.getMessage(player));
                 this.crateManager.removePlayerFromOpeningList(this.player);
@@ -164,11 +164,11 @@ public class QuadCrateManager {
             }
         }
 
-        List<Entity> shovePlayers = new ArrayList<>();
+        final List<Entity> shovePlayers = new ArrayList<>();
 
-        for (Entity entity : player.getNearbyEntities(3, 3, 3)) {
+        for (final Entity entity : player.getNearbyEntities(3, 3, 3)) {
             if (entity instanceof Player) {
-                for (QuadCrateManager ongoingCrate : crateSessions) {
+                for (final QuadCrateManager ongoingCrate : crateSessions) {
                     if (entity.getUniqueId() == ongoingCrate.player.getUniqueId()) {
                         this.player.sendMessage(Messages.too_close_to_another_player.getMessage("%player%", entity.getName(), player));
                         this.crateManager.removePlayerFromOpeningList(this.player);
@@ -206,7 +206,7 @@ public class QuadCrateManager {
         this.crateLocations.forEach(loc -> this.cratesOpened.put(loc, false));
 
         // This holds the quad crate's spawned chests.
-        for (Location loc : this.crateLocations) {
+        for (final Location loc : this.crateLocations) {
             if (this.crateLocations.contains(loc)) this.quadCrateChests.put(loc.clone(), loc.getBlock().getState());
         }
 
@@ -232,7 +232,7 @@ public class QuadCrateManager {
                 } else {
                     crate.playSound(player, player.getLocation(), "cycle-sound", "BLOCK_STONE_STEP", SoundCategory.PLAYERS);
 
-                    Block chest = crateLocations.get(crateNumber).getBlock();
+                    final Block chest = crateLocations.get(crateNumber).getBlock();
 
                     chest.setType(Material.CHEST);
 
@@ -306,7 +306,7 @@ public class QuadCrateManager {
      *
      * @param removeForce whether to stop the crate session or not.
      */
-    public void endCrateForce(boolean removeForce) {
+    public void endCrateForce(final boolean removeForce) {
         this.oldBlocks.keySet().forEach(location -> this.oldBlocks.get(location).update(true, false));
         this.crateLocations.forEach(location -> this.quadCrateChests.get(location).update(true, false));
         this.displayedRewards.forEach(Entity::remove);
@@ -327,7 +327,7 @@ public class QuadCrateManager {
      * @param y y coordinate.
      * @param z z coordinate.
      */
-    public void addCrateLocations(int x, int y, int z) {
+    public void addCrateLocations(final int x, final int y, final int z) {
         this.crateLocations.add(this.spawnLocation.clone().add(x, y, z));
     }
 
@@ -352,15 +352,15 @@ public class QuadCrateManager {
      * @param location1         the first location of the particle.
      * @param location2         the second location of the particle.
      */
-    private void spawnParticles(CrateParticles quadCrateParticle, Color particleColor, Location location1, Location location2) {
-        Particle particle = switch (quadCrateParticle) {
+    private void spawnParticles(final CrateParticles quadCrateParticle, final Color particleColor, final Location location1, final Location location2) {
+        final Particle particle = switch (quadCrateParticle) {
             case flame -> Particle.FLAME;
-            case villager_happy -> Particle.VILLAGER_HAPPY;
-            case spell_witch -> Particle.SPELL_WITCH;
-            default -> Particle.REDSTONE;
+            case villager_happy -> Particle.HAPPY_VILLAGER;
+            case spell_witch -> Particle.WITCH;
+            default -> Particle.DUST;
         };
 
-        if (particle == Particle.REDSTONE) {
+        if (particle == Particle.DUST) {
             location1.getWorld().spawnParticle(particle, location1, 0, new Particle.DustOptions(particleColor, 1));
             location2.getWorld().spawnParticle(particle, location2, 0, new Particle.DustOptions(particleColor, 1));
         } else {
@@ -420,7 +420,7 @@ public class QuadCrateManager {
      * @return true or false.
      */
     public boolean allCratesOpened() {
-        for (Map.Entry<Location, Boolean> location : this.cratesOpened.entrySet()) {
+        for (final Map.Entry<Location, Boolean> location : this.cratesOpened.entrySet()) {
             if (!location.getValue()) return false;
         }
 

@@ -10,13 +10,13 @@ import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
 import com.badbones69.crazycrates.api.utils.MiscUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import me.clip.placeholderapi.PlaceholderAPI;
-import org.apache.commons.lang.WordUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -35,7 +35,7 @@ public class PrizeManager {
      * @param crate  the player is opening.
      * @param prize  the player is being given.
      */
-    public static void givePrize(Player player, Prize prize, Crate crate) {
+    public static void givePrize(final Player player, Prize prize, final Crate crate) {
         if (prize == null) {
             plugin.debug(() -> "No prize was found when giving " + player.getName() + " a prize.", Level.WARNING);
             return;
@@ -43,9 +43,9 @@ public class PrizeManager {
 
         prize = prize.hasPermission(player) ? prize.getAlternativePrize() : prize;
 
-        for (ItemStack item : prize.getItems()) {
+        for (final ItemStack item : prize.getItems()) {
             if (item == null) {
-                HashMap<String, String> placeholders = new HashMap<>();
+                final HashMap<String, String> placeholders = new HashMap<>();
                 placeholders.put("%crate%", prize.getCrateName());
                 placeholders.put("%prize%", prize.getPrizeName());
                 player.sendMessage(Messages.prize_error.getMessage(placeholders, player));
@@ -59,8 +59,8 @@ public class PrizeManager {
             }
         }
 
-        for (ItemBuilder item : prize.getItemBuilders()) {
-            ItemBuilder clone = new ItemBuilder(item).setTarget(player);
+        for (final ItemBuilder item : prize.getItemBuilders()) {
+            final ItemBuilder clone = new ItemBuilder(item).setTarget(player);
 
             if (!MiscUtils.isInventoryFull(player)) {
                 player.getInventory().addItem(clone.build());
@@ -71,18 +71,18 @@ public class PrizeManager {
 
         for (String command : prize.getCommands()) { // /give %player% iron %random%:1-64
             if (command.contains("%random%:")) {
-                String cmd = command;
-                StringBuilder commandBuilder = new StringBuilder();
+                final String cmd = command;
+                final StringBuilder commandBuilder = new StringBuilder();
 
                 for (String word : cmd.split(" ")) {
                     if (word.startsWith("%random%:")) {
                         word = word.replace("%random%:", "");
 
                         try {
-                            long min = Long.parseLong(word.split("-")[0]);
-                            long max = Long.parseLong(word.split("-")[1]);
+                            final long min = Long.parseLong(word.split("-")[0]);
+                            final long max = Long.parseLong(word.split("-")[1]);
                             commandBuilder.append(MiscUtils.pickNumber(min, max)).append(" ");
-                        } catch (Exception e) {
+                        } catch (final Exception e) {
                             commandBuilder.append("1 ");
 
                             plugin.getLogger().warning("The prize " + prize.getPrizeName() + " in the " + prize.getCrateName() + " crate has caused an error when trying to run a command.");
@@ -99,9 +99,9 @@ public class PrizeManager {
 
             if (MiscUtils.isPapiActive()) command = PlaceholderAPI.setPlaceholders(player, command);
 
-            String display = prize.getDisplayItemBuilder().getName();
+            final String display = prize.getDisplayItemBuilder().getName();
 
-            String name = display == null || display.isEmpty() ? MsgUtils.color(WordUtils.capitalizeFully(prize.getDisplayItemBuilder().getMaterial().getKey().getKey().replaceAll("_", " "))) : display;
+            final String name = display == null || display.isEmpty() ? MsgUtils.color(prize.getDisplayItemBuilder().getMaterial().getKey().getKey().toUpperCase(Locale.ROOT).replaceAll("_", " ")) : display;
 
             MiscUtils.sendCommand(command
                     .replaceAll("%player%", quoteReplacement(player.getName()))
@@ -111,24 +111,24 @@ public class PrizeManager {
         }
 
         if (!crate.getPrizeMessage().isEmpty() && prize.getMessages().isEmpty()) {
-            for (String message : crate.getPrizeMessage()) {
+            for (final String message : crate.getPrizeMessage()) {
                 sendMessage(player, prize, crate, message);
             }
 
             return;
         }
 
-        for (String message : prize.getMessages()) {
+        for (final String message : prize.getMessages()) {
             sendMessage(player, prize, crate, message);
         }
     }
 
-    private static void sendMessage(Player player, Prize prize, Crate crate, String message) {
-        String display = prize.getDisplayItemBuilder().getName();
+    private static void sendMessage(final Player player, final Prize prize, final Crate crate, final String message) {
+        final String display = prize.getDisplayItemBuilder().getName();
 
-        String name = display == null || display.isEmpty() ? MsgUtils.color(WordUtils.capitalizeFully(prize.getDisplayItemBuilder().getMaterial().getKey().getKey().replaceAll("_", " "))) : display;
+        final String name = display == null || display.isEmpty() ? MsgUtils.color(prize.getDisplayItemBuilder().getMaterial().getKey().getKey().toUpperCase(Locale.ROOT).replaceAll("_", " ")) : display;
 
-        String defaultMessage = message
+        final String defaultMessage = message
                 .replaceAll("%player%", quoteReplacement(player.getName()))
                 .replaceAll("%Player%", quoteReplacement(player.getName()))
                 .replaceAll("%reward%", quoteReplacement(name))
@@ -144,7 +144,7 @@ public class PrizeManager {
      * @param crate  the player is opening.
      * @param prize  the player is being given.
      */
-    public static void givePrize(Player player, Crate crate, Prize prize) {
+    public static void givePrize(final Player player, final Crate crate, final Prize prize) {
         if (prize != null) {
             givePrize(player, prize, crate);
 
@@ -156,23 +156,23 @@ public class PrizeManager {
         }
     }
 
-    public static void getPrize(Crate crate, Inventory inventory, int slot, Player player) {
-        ItemStack item = inventory.getItem(slot);
+    public static void getPrize(final Crate crate, final Inventory inventory, final int slot, final Player player) {
+        final ItemStack item = inventory.getItem(slot);
 
         if (item == null) return;
 
-        Prize prize = crate.getPrize(item);
+        final Prize prize = crate.getPrize(item);
 
         givePrize(player, prize, crate);
     }
 
-    public static Tier getTier(Crate crate) {
+    public static Tier getTier(final Crate crate) {
         if (crate.getTiers() != null && !crate.getTiers().isEmpty()) {
             for (int stopLoop = 0; stopLoop <= 100; stopLoop++) {
-                for (Tier tier : crate.getTiers()) {
-                    int chance = tier.getChance();
+                for (final Tier tier : crate.getTiers()) {
+                    final int chance = tier.getChance();
 
-                    int num = MiscUtils.useOtherRandom() ? ThreadLocalRandom.current().nextInt(tier.getMaxRange()) : RANDOM.nextInt(tier.getMaxRange());
+                    final int num = MiscUtils.useOtherRandom() ? ThreadLocalRandom.current().nextInt(tier.getMaxRange()) : RANDOM.nextInt(tier.getMaxRange());
 
                     if (num >= 1 && num <= chance) {
                         return tier;

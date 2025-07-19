@@ -3,7 +3,6 @@ package com.badbones69.crazycrates.api.objects;
 import com.badbones69.crazycrates.api.enums.PersistentKeys;
 import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
 import com.badbones69.crazycrates.api.utils.MiscUtils;
-import org.apache.commons.lang.WordUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -19,6 +18,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class Prize {
 
@@ -38,17 +38,17 @@ public class Prize {
     private List<Tier> tiers = new ArrayList<>();
     private Prize alternativePrize;
 
-    public Prize(ConfigurationSection section, List<Tier> tierPrizes, String crateName, Prize alternativePrize) {
+    public Prize(final ConfigurationSection section, final List<Tier> tierPrizes, final String crateName, final Prize alternativePrize) {
         this.section = section;
 
         this.prizeNumber = section.getName();
 
         this.crateName = crateName;
 
-        List<?> list = section.getList("Editor-Items");
+        final List<?> list = section.getList("Editor-Items");
 
         if (list != null) {
-            for (Object key : list) {
+            for (final Object key : list) {
                 this.items.add((ItemStack) key);
             }
         }
@@ -58,7 +58,7 @@ public class Prize {
         this.tiers = tierPrizes;
 
         this.alternativePrize = alternativePrize;
-        this.prizeName = section.getString("DisplayName", WordUtils.capitalizeFully(section.getString("DisplayItem", "STONE").replaceAll("_", " ")));
+        this.prizeName = section.getString("DisplayName", section.getString("DisplayItem", "STONE").toUpperCase(Locale.ROOT).replaceAll("_", " "));
         this.maxRange = section.getInt("MaxRange", 100);
         this.chance = section.getInt("Chance", 100);
         this.firework = section.getBoolean("Firework", false);
@@ -81,7 +81,7 @@ public class Prize {
      *
      * @param section the configuration section.
      */
-    public Prize(String prizeName, String prizeNumber, ConfigurationSection section) {
+    public Prize(final String prizeName, final String prizeNumber, final ConfigurationSection section) {
         this.prizeName = prizeName;
 
         this.builders = ItemBuilder.convertStringList(section.getStringList("Items"), prizeNumber);
@@ -112,10 +112,10 @@ public class Prize {
      * @return the display item that is shown for the preview and the winning prize.
      */
     public ItemStack getDisplayItem() {
-        ItemStack itemStack = this.displayItem.build();
+        final ItemStack itemStack = this.displayItem.build();
 
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        PersistentDataContainer container = itemMeta.getPersistentDataContainer();
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        final PersistentDataContainer container = itemMeta.getPersistentDataContainer();
 
         container.set(PersistentKeys.crate_prize.getNamespacedKey(), PersistentDataType.STRING, this.prizeName);
 
@@ -127,11 +127,11 @@ public class Prize {
     /**
      * @return the display item that is shown for the preview and the winning prize.
      */
-    public ItemStack getDisplayItem(Player player) {
-        ItemStack itemStack = this.displayItem.setTarget(player).build();
+    public ItemStack getDisplayItem(final Player player) {
+        final ItemStack itemStack = this.displayItem.setTarget(player).build();
 
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        PersistentDataContainer container = itemMeta.getPersistentDataContainer();
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        final PersistentDataContainer container = itemMeta.getPersistentDataContainer();
 
         container.set(PersistentKeys.crate_prize.getNamespacedKey(), PersistentDataType.STRING, this.prizeName);
 
@@ -227,12 +227,12 @@ public class Prize {
     /**
      * @return true if they prize has blacklist permissions and false if not.
      */
-    public boolean hasPermission(Player player) {
+    public boolean hasPermission(final Player player) {
         if (player.isOp()) {
             return false;
         }
 
-        for (String permission : this.permissions) {
+        for (final String permission : this.permissions) {
             if (player.hasPermission(permission)) return true;
         }
 
@@ -240,18 +240,18 @@ public class Prize {
     }
 
     private ItemBuilder display() {
-        ItemBuilder builder = new ItemBuilder();
+        final ItemBuilder builder = new ItemBuilder();
 
         try {
-            String material = this.section.getString("DisplayItem", "RED_TERRACOTTA");
-            int amount = this.section.getInt("DisplayAmount", 1);
-            List<String> lore = this.section.getStringList("Lore");
-            boolean isGlowing = this.section.getBoolean("Glowing", false);
-            boolean isUnbreakable = this.section.getBoolean("Unbreakable", false);
-            boolean hideItemFlags = this.section.getBoolean("HideItemFlags", false);
-            List<String> itemFlags = this.section.getStringList("Flags");
-            List<String> patterns = this.section.getStringList("Patterns");
-            String playerName = this.section.getString("Player", "");
+            final String material = this.section.getString("DisplayItem", "RED_TERRACOTTA");
+            final int amount = this.section.getInt("DisplayAmount", 1);
+            final List<String> lore = this.section.getStringList("Lore");
+            final boolean isGlowing = this.section.getBoolean("Glowing", false);
+            final boolean isUnbreakable = this.section.getBoolean("Unbreakable", false);
+            final boolean hideItemFlags = this.section.getBoolean("HideItemFlags", false);
+            final List<String> itemFlags = this.section.getStringList("Flags");
+            final List<String> patterns = this.section.getStringList("Patterns");
+            final String playerName = this.section.getString("Player", "");
 
             builder.setMaterial(material)
                     .setAmount(amount)
@@ -264,27 +264,27 @@ public class Prize {
                     .addPatterns(patterns)
                     .setPlayerName(playerName);
 
-            NamespacedKey cratePrize = PersistentKeys.crate_prize.getNamespacedKey();
+            final NamespacedKey cratePrize = PersistentKeys.crate_prize.getNamespacedKey();
 
-            ItemMeta itemMeta = builder.getItemMeta();
+            final ItemMeta itemMeta = builder.getItemMeta();
 
             itemMeta.getPersistentDataContainer().set(cratePrize, PersistentDataType.STRING, this.section.getName());
             builder.setItemMeta(itemMeta);
 
-            int displayDamage = this.section.getInt("DisplayDamage", 0);
+            final int displayDamage = this.section.getInt("DisplayDamage", 0);
             builder.setDamage(displayDamage);
 
             if (this.section.contains("DisplayTrim.Pattern")) {
                 NamespacedKey key = null;
 
-                String trimPattern = this.section.getString("DisplayTrim.Pattern");
+                final String trimPattern = this.section.getString("DisplayTrim.Pattern");
 
                 if (trimPattern != null) {
                     key = NamespacedKey.minecraft(trimPattern.toLowerCase());
                 }
 
                 if (key != null) {
-                    TrimPattern registry = Registry.TRIM_PATTERN.get(key);
+                    final TrimPattern registry = Registry.TRIM_PATTERN.get(key);
                     builder.setTrimPattern(registry);
                 }
             }
@@ -292,21 +292,21 @@ public class Prize {
             if (this.section.contains("DisplayTrim.Material")) {
                 NamespacedKey key = null;
 
-                String trimMaterial = this.section.getString("DisplayTrim.Material");
+                final String trimMaterial = this.section.getString("DisplayTrim.Material");
 
                 if (trimMaterial != null) {
                     key = NamespacedKey.minecraft(trimMaterial.toLowerCase());
                 }
 
                 if (key != null) {
-                    TrimMaterial registry = Registry.TRIM_MATERIAL.get(key);
+                    final TrimMaterial registry = Registry.TRIM_MATERIAL.get(key);
                     builder.setTrimMaterial(registry);
                 }
             }
 
             if (this.section.contains("DisplayEnchantments")) {
-                for (String name : this.section.getStringList("DisplayEnchantments")) {
-                    Enchantment enchantment = MiscUtils.getEnchantment(name.split(":")[0]);
+                for (final String name : this.section.getStringList("DisplayEnchantments")) {
+                    final Enchantment enchantment = MiscUtils.getEnchantment(name.split(":")[0]);
 
                     if (enchantment != null) {
                         builder.addEnchantments(enchantment, Integer.parseInt(name.split(":")[1]));
@@ -315,8 +315,8 @@ public class Prize {
             }
 
             return builder;
-        } catch (Exception exception) {
-            List<String> list = List.of(
+        } catch (final Exception exception) {
+            final List<String> list = List.of(
                     "&cThere was an error with one of your prizes!",
                     "&cThe reward in question is labeled: &e" + this.section.getName() + " &cin crate: &e" + this.crateName,
                     "&cName of the reward is " + this.section.getString("DisplayName"),
