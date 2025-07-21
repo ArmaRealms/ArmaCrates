@@ -1,44 +1,31 @@
-import org.gradle.kotlin.dsl.support.uppercaseFirstChar
+import io.papermc.paperweight.tasks.RemapJar
+import java.util.Locale
 
-plugins {
-    id("root-plugin")
-}
+fun String.cap() = replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+
+plugins { id("root-plugin") }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-tasks {
-    assemble {
-        val jarsDir = File("$rootDir/jars")
+tasks.assemble {
+    val jarsDir = rootDir.resolve("jars")
 
-        doFirst {
-            delete(jarsDir)
+    doFirst { delete(jarsDir); jarsDir.mkdirs() }
 
-            jarsDir.mkdirs()
-        }
+    subprojects.filter { it.name in listOf("paper", "fabric") }.forEach { sub ->
+        val reobf = sub.tasks.named<RemapJar>("reobfJar")
+        dependsOn(reobf)
 
-        subprojects.filter { it.name == "paper" || it.name == "fabric" }.forEach { project ->
-            dependsOn(":${project.name}:build")
+        doLast {
+            val dest = jarsDir.resolve(sub.name.cap())
+            dest.mkdirs()
 
-            doLast {
-                runCatching {
-                    val file = File("$jarsDir/${project.name.uppercaseFirstChar().lowercase()}")
-
-                    file.mkdirs()
-
-                    copy {
-                        from(project.layout.buildDirectory.file("libs/${rootProject.name}-${project.version}.jar"))
-                        into(file)
-                    }
-                }.onSuccess {
-                    // Delete to save space on jenkins.
-                    delete(project.layout.buildDirectory.get())
-                    delete(rootProject.layout.buildDirectory.get())
-                }.onFailure {
-                    println("Failed to copy file out of build folder into jars directory: Likely does not exist.")
-                }
+            copy {
+                from(reobf.flatMap { it.outputJar })
+                into(dest)
             }
         }
     }
