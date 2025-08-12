@@ -31,9 +31,9 @@ public class CommandManager {
         new ArgumentRelations().build();
 
         this.bukkitCommandManager.registerSuggestion(SuggestionKey.of("crates"), (sender, context) -> {
-            List<String> crates = new ArrayList<>(this.plugin.getFileManager().getAllCratesNames());
+            final List<String> crates = new ArrayList<>(this.plugin.getFileManager().getAllCratesNames());
 
-            crates.add("Menu");
+            crates.remove("Menu");
 
             return crates;
         });
@@ -45,7 +45,7 @@ public class CommandManager {
         this.bukkitCommandManager.registerSuggestion(SuggestionKey.of("locations"), (sender, context) -> this.plugin.getCrateManager().getCrateLocations().stream().map(CrateLocation::getID).toList());
 
         this.bukkitCommandManager.registerSuggestion(SuggestionKey.of("prizes"), (sender, context) -> {
-            List<String> numbers = new ArrayList<>();
+            final List<String> numbers = new ArrayList<>();
 
             this.plugin.getCrateManager().getCrateFromName(context.getArgs().getFirst()).getPrizes().forEach(prize -> numbers.add(prize.getPrizeNumber()));
 
@@ -53,7 +53,7 @@ public class CommandManager {
         });
 
         this.bukkitCommandManager.registerSuggestion(SuggestionKey.of("tiers"), (sender, context) -> {
-            List<String> numbers = new ArrayList<>();
+            final List<String> numbers = new ArrayList<>();
 
             this.plugin.getCrateManager().getCrateFromName(context.getArgs().getFirst()).getTiers().forEach(tier -> numbers.add(tier.getName()));
 
@@ -61,7 +61,7 @@ public class CommandManager {
         });
 
         this.bukkitCommandManager.registerSuggestion(SuggestionKey.of("numbers"), (sender, context) -> {
-            List<String> numbers = new ArrayList<>();
+            final List<String> numbers = new ArrayList<>();
 
             for (int i = 1; i <= 100; i++) numbers.add(String.valueOf(i));
 
