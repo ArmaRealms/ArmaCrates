@@ -26,7 +26,7 @@ dependencyResolutionManagement {
 
             library("placeholderapi", "me.clip", "placeholderapi").version("2.11.6")
 
-            library("triumphgui", "dev.triumphteam", "triumph-gui").version("3.1.11")
+            library("triumphgui", "dev.triumphteam", "triumph-gui").version("3.1.13-SNAPSHOT")
 
             library("nbtapi", "de.tr7zw", "item-nbt-api").version("2.15.1")
 
