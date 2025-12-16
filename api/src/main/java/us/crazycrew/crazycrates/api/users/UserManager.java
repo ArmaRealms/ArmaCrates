@@ -15,6 +15,12 @@ import java.util.UUID;
 public abstract class UserManager {
 
     /**
+     * UserManager constructor
+     */
+    public UserManager() {
+    }
+
+    /**
      * Get the player
      *
      * @param uuid The uuid of the player

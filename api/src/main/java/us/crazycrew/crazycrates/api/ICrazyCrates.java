@@ -22,6 +22,8 @@ public interface ICrazyCrates {
     void disable();
 
     /**
+     * Get the user manager.
+     *
      * @return the user manager
      */
     @NotNull UserManager getUserManager();
