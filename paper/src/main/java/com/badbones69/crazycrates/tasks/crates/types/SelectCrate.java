@@ -40,8 +40,8 @@ public class SelectCrate extends CrateBuilder {
     private static String getGuiTitle(Crate crate) {
         FileConfiguration file = crate.getFile();
         return file != null ? 
-            MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Selecione seu prêmio!")) :
-            "&6Selecione seu prêmio!";
+            MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Select Your Prize!")) :
+            "&6Select Your Prize!";
     }
 
     @Override
@@ -103,7 +103,7 @@ public class SelectCrate extends CrateBuilder {
             
             if (lore.isEmpty()) {
                 lore = new ArrayList<>();
-                lore.add("&7Clique para receber o prêmio selecionado.");
+                lore.add("&7Click to receive the selected prize.");
             }
             
             builder.setMaterial(material)
@@ -112,8 +112,8 @@ public class SelectCrate extends CrateBuilder {
         } else {
             // Default confirm button
             builder.setMaterial(Material.LIME_CONCRETE)
-                   .setName(MsgUtils.color("&aConfirmar escolha"))
-                   .setLore(List.of(MsgUtils.color("&7Clique para receber o prêmio selecionado.")));
+                   .setName(MsgUtils.color("&aConfirm Choice"))
+                   .setLore(List.of(MsgUtils.color("&7Click to receive the selected prize.")));
         }
         
         return builder;
@@ -135,7 +135,7 @@ public class SelectCrate extends CrateBuilder {
             
             if (lore.isEmpty()) {
                 lore = new ArrayList<>();
-                lore.add("&7Este prêmio está selecionado.");
+                lore.add("&7This prize is selected.");
             }
             
             builder.setMaterial(material)
@@ -144,8 +144,8 @@ public class SelectCrate extends CrateBuilder {
         } else {
             // Default selection marker
             builder.setMaterial(Material.NETHER_STAR)
-                   .setName(MsgUtils.color("&eSelecionado"))
-                   .setLore(List.of(MsgUtils.color("&7Este prêmio está selecionado.")));
+                   .setName(MsgUtils.color("&eSelected"))
+                   .setLore(List.of(MsgUtils.color("&7This prize is selected.")));
         }
         
         return builder;

@@ -158,8 +158,8 @@ public class SelectCrateListener implements Listener {
         // Check if player has selected a prize
         if (!session.hasSelection()) {
             String message = crate.getFile() != null ?
-                crate.getFile().getString("Crate.SelectCrate.Messages.NoSelection", "&cSelecione um prêmio antes de confirmar.") :
-                "&cSelecione um prêmio antes de confirmar.";
+                crate.getFile().getString("Crate.SelectCrate.Messages.NoSelection", "&cPlease select a prize before confirming.") :
+                "&cPlease select a prize before confirming.";
             player.sendMessage(MsgUtils.color(message));
             return;
         }
@@ -168,19 +168,20 @@ public class SelectCrateListener implements Listener {
         String crateName = crate.getName();
         KeyType type = this.crateManager.getPlayerKeyType(player);
 
-        // Validate player still has keys
-        boolean hasPhysicalKey = type == KeyType.physical_key && 
-            this.plugin.getUserManager().hasPhysicalKey(uuid, crateName, this.crateManager.getHand(player));
-
-        if (type == KeyType.physical_key && !hasPhysicalKey) {
-            player.sendMessage(Messages.no_keys.getMessage(player));
-            cleanupSession(player);
-            player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
-            return;
+        // Validate player still has keys (only for physical keys)
+        if (type == KeyType.physical_key) {
+            boolean hasPhysicalKey = this.plugin.getUserManager().hasPhysicalKey(uuid, crateName, this.crateManager.getHand(player));
+            
+            if (!hasPhysicalKey) {
+                player.sendMessage(Messages.no_keys.getMessage(player));
+                cleanupSession(player);
+                player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
+                return;
+            }
         }
 
-        // Take the key
-        boolean keyTaken = this.crateManager.hasPlayerKeyType(player) && 
+        // Take the key - takeKeys returns true on success, false on failure
+        boolean failedToTakeKeys = this.crateManager.hasPlayerKeyType(player) && 
             !this.plugin.getUserManager().takeKeys(
                 crate.getRequiredKeys() > 0 ? crate.getRequiredKeys() : 1, 
                 uuid, 
@@ -189,7 +190,7 @@ public class SelectCrateListener implements Listener {
                 this.crateManager.getHand(player)
             );
 
-        if (!keyTaken) {
+        if (failedToTakeKeys) {
             MiscUtils.failedToTakeKey(player, crate);
             cleanupSession(player);
             player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
