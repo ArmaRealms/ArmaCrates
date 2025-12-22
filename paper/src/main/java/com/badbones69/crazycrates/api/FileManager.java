@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +26,7 @@ public class FileManager {
 
     private final Map<Files, File> files = new ConcurrentHashMap<>();
     private final List<String> homeFolders = new ArrayList<>();
-    private final List<CustomFile> customFiles = new ArrayList<>();
+    private final List<CustomFile> customFiles = new CopyOnWriteArrayList<>();
     private final Map<String, String> jarHomeFolders = new ConcurrentHashMap<>();
     private final Map<String, String> autoGenerateFiles = new ConcurrentHashMap<>();
     private final Map<Files, FileConfiguration> configurations = new ConcurrentHashMap<>();
@@ -282,7 +283,7 @@ public class FileManager {
 
                             // Check if file is already registered
                             if (!isFileRegistered(existingCrateFiles, name, expectedHomeFolder)) {
-                                final CustomFile file = new CustomFile(name, homeFolder + "/", subFolder);
+                                final CustomFile file = new CustomFile(name, homeFolder, subFolder);
                                 if (file.exists()) {
                                     this.customFiles.add(file);
                                     if (this.isLogging)
