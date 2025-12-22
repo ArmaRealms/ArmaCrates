@@ -182,6 +182,9 @@ public class CrateBaseCommand extends BaseCommand {
             });
         }
 
+        // Re-scan the crate directory to detect new or removed crate files
+        this.fileManager.rescanCrateDirectory();
+
         this.crateManager.loadCrates();
 
         if (sender instanceof final Player player) {

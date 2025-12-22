@@ -198,7 +198,15 @@ public class CrateManager {
         for (final String crateName : this.fileManager.getAllCratesNames()) {
             try {
                 this.fileManager.reloadFile(crateName);
-                final FileConfiguration file = this.fileManager.getFile(crateName).getFile();
+                final FileManager.CustomFile customFile = this.fileManager.getFile(crateName);
+                
+                if (customFile == null) {
+                    this.plugin.getLogger().warning("Could not load crate " + crateName + ".yml - file not registered in FileManager. Skipping.");
+                    this.brokeCrates.add(crateName);
+                    continue;
+                }
+                
+                final FileConfiguration file = customFile.getFile();
                 final ConfigurationSection section = file.getConfigurationSection("Crate.Tiers");
 
                 final List<Tier> tiers = new ArrayList<>();

@@ -239,6 +239,111 @@ public class FileManager {
     }
 
     /**
+     * Re-scans the crate directory and updates the registry of custom files.
+     * This method should be called during reload to detect new crate files that were added
+     * while the server was running, and to remove files that were deleted.
+     */
+    public void rescanCrateDirectory() {
+        final File crateDirectory = new File(this.plugin.getDataFolder(), "/crates");
+
+        // Ensure the directory exists
+        if (!crateDirectory.exists()) {
+            crateDirectory.mkdirs();
+            if (this.isLogging) this.logger.info("The folder /crates was not found so it was created.");
+            return;
+        }
+
+        // Track existing files for removal detection
+        final List<CustomFile> existingCrateFiles = new ArrayList<>();
+        for (final CustomFile file : this.customFiles) {
+            if (file.getHomeFolder().equals("/crates") || file.getHomeFolder().startsWith("/crates/")) {
+                existingCrateFiles.add(file);
+            }
+        }
+
+        // Scan the crate directory
+        final File[] filesList = crateDirectory.listFiles();
+        final List<String> foundFiles = new ArrayList<>();
+
+        if (filesList != null) {
+            for (final File directory : filesList) {
+                if (directory.isDirectory()) {
+                    // Handle subdirectories
+                    final String[] folder = directory.list();
+
+                    if (folder != null) {
+                        for (final String name : folder) {
+                            if (!name.endsWith(".yml")) continue;
+
+                            foundFiles.add("/crates/" + directory.getName() + "/" + name);
+                            final String subFolder = directory.getName();
+
+                            // Check if file is already registered
+                            boolean alreadyRegistered = false;
+                            for (final CustomFile existingFile : existingCrateFiles) {
+                                if (existingFile.getFileName().equals(name) && 
+                                    existingFile.getHomeFolder().equals("/crates/" + subFolder)) {
+                                    alreadyRegistered = true;
+                                    break;
+                                }
+                            }
+
+                            if (!alreadyRegistered) {
+                                final CustomFile file = new CustomFile(name, "/crates/", subFolder);
+                                if (file.exists()) {
+                                    this.customFiles.add(file);
+                                    if (this.isLogging)
+                                        this.logger.info("Registered new crate file: /crates/" + subFolder + "/" + name);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Handle files directly in /crates
+                    final String name = directory.getName();
+
+                    if (!name.endsWith(".yml")) continue;
+
+                    foundFiles.add("/crates/" + name);
+
+                    // Check if file is already registered
+                    boolean alreadyRegistered = false;
+                    for (final CustomFile existingFile : existingCrateFiles) {
+                        if (existingFile.getFileName().equals(name) && 
+                            existingFile.getHomeFolder().equals("/crates")) {
+                            alreadyRegistered = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyRegistered) {
+                        final CustomFile file = new CustomFile(name, "/crates");
+                        if (file.exists()) {
+                            this.customFiles.add(file);
+                            if (this.isLogging)
+                                this.logger.info("Registered new crate file: /crates/" + name);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Remove files that no longer exist on disk
+        final List<CustomFile> filesToRemove = new ArrayList<>();
+        for (final CustomFile existingFile : existingCrateFiles) {
+            final String fullPath = existingFile.getHomeFolder() + "/" + existingFile.getFileName();
+            
+            if (!foundFiles.contains(fullPath)) {
+                filesToRemove.add(existingFile);
+                if (this.isLogging)
+                    this.logger.info("Removed crate file from registry: " + fullPath + " (file no longer exists)");
+            }
+        }
+
+        this.customFiles.removeAll(filesToRemove);
+    }
+
+    /**
      * @return A list of crate names.
      */
     public List<String> getAllCratesNames() {
