@@ -225,14 +225,6 @@ public class SelectCrateListener implements Listener {
         // Cleanup and close
         cleanupSession(player);
         player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
-
-        // Send success messages from the prize
-        for (final String message : crate.getPrizeMessage()) {
-            player.sendMessage(MsgUtils.color(message
-                    .replace("%crate%", crate.getName())
-                    .replace("%prize%", Objects.requireNonNull(selectedPrize).getPrizeName())
-                    .replace("%player%", player.getName())));
-        }
     }
 
     /**
