@@ -2,11 +2,8 @@ package com.badbones69.crazycrates.listeners.crates;
 
 import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.api.PrizeManager;
-import com.badbones69.crazycrates.api.builders.CrateBuilder;
 import com.badbones69.crazycrates.api.builders.types.CratePrizeMenu;
 import com.badbones69.crazycrates.api.enums.Messages;
-import com.badbones69.crazycrates.api.enums.PersistentKeys;
-import com.badbones69.crazycrates.api.events.PlayerPrizeEvent;
 import com.badbones69.crazycrates.api.objects.Crate;
 import com.badbones69.crazycrates.api.objects.Prize;
 import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
@@ -15,7 +12,6 @@ import com.badbones69.crazycrates.api.utils.MsgUtils;
 import com.badbones69.crazycrates.tasks.crates.CrateManager;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateSession;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
@@ -29,9 +25,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import us.crazycrew.crazycrates.api.enums.types.CrateType;
 import us.crazycrew.crazycrates.api.enums.types.KeyType;
@@ -40,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -63,25 +55,25 @@ public class SelectCrateListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(final InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof final Player player)) {
-            this.plugin.debug(() ->"Non-player entity tried to interact with a SelectCrate inventory.");
+            this.plugin.debug(() -> "Non-player entity tried to interact with a SelectCrate inventory.");
             return;
         }
 
         final Inventory inventory = event.getInventory();
         if (!(inventory.getHolder(false) instanceof CratePrizeMenu)) {
-            this.plugin.debug(() ->"Inventory holder is not a CratePrizeMenu.");
+            this.plugin.debug(() -> "Inventory holder is not a CratePrizeMenu.");
             return;
         }
 
         // Check if player is opening a SelectCrate
         final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) {
-            this.plugin.debug(() ->"Player is not opening a SelectCrate.");
+            this.plugin.debug(() -> "Player is not opening a SelectCrate.");
             return;
         }
 
         if (!this.crateManager.isInOpeningList(player)) {
-            this.plugin.debug(() ->"Player is not in the opening list for SelectCrate.");
+            this.plugin.debug(() -> "Player is not in the opening list for SelectCrate.");
             return;
         }
 
@@ -101,7 +93,7 @@ public class SelectCrateListener implements Listener {
 
         final ItemStack clickedItem = topInventory.getItem(slot);
         if (clickedItem == null || clickedItem.getType() == Material.AIR) {
-            this.plugin.debug(() ->"Clicked item is null or air in SelectCrate.");
+            this.plugin.debug(() -> "Clicked item is null or air in SelectCrate.");
             return;
         }
 
@@ -115,14 +107,14 @@ public class SelectCrateListener implements Listener {
 
         if (slot == confirmSlot) {
             handleConfirmClick(player, session, view);
-            this.plugin.debug(() ->"Player clicked the confirm button in SelectCrate.");
+            this.plugin.debug(() -> "Player clicked the confirm button in SelectCrate.");
             return;
         }
 
         // Check if clicked on a prize
         final Prize prize = crate.getPrize(clickedItem);
         if (prize == null) {
-            this.plugin.debug(() ->"Clicked item is not a valid prize in SelectCrate.");
+            this.plugin.debug(() -> "Clicked item is not a valid prize in SelectCrate.");
             return;
         }
 
