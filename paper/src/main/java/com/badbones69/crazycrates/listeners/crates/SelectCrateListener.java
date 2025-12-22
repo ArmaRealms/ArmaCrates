@@ -63,25 +63,25 @@ public class SelectCrateListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(final InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof final Player player)) {
-            this.plugin.getLogger().info("Non-player entity tried to interact with a SelectCrate inventory.");
+            this.plugin.debug(() ->"Non-player entity tried to interact with a SelectCrate inventory.");
             return;
         }
 
         final Inventory inventory = event.getInventory();
         if (!(inventory.getHolder(false) instanceof CratePrizeMenu)) {
-            this.plugin.getLogger().info("Inventory holder is not a CratePrizeMenu.");
+            this.plugin.debug(() ->"Inventory holder is not a CratePrizeMenu.");
             return;
         }
 
         // Check if player is opening a SelectCrate
         final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) {
-            this.plugin.getLogger().info("Player is not opening a SelectCrate.");
+            this.plugin.debug(() ->"Player is not opening a SelectCrate.");
             return;
         }
 
         if (!this.crateManager.isInOpeningList(player)) {
-            this.plugin.getLogger().info("Player is not in the opening list for SelectCrate.");
+            this.plugin.debug(() ->"Player is not in the opening list for SelectCrate.");
             return;
         }
 
@@ -95,13 +95,13 @@ public class SelectCrateListener implements Listener {
 
         // Check if clicking in the top inventory
         if (event.getClickedInventory() != topInventory) {
-            this.plugin.getLogger().info("Clicked inventory is not the top inventory in SelectCrate.");
+            this.plugin.debug(() -> "Clicked inventory is not the top inventory in SelectCrate.");
             return;
         }
 
         final ItemStack clickedItem = topInventory.getItem(slot);
         if (clickedItem == null || clickedItem.getType() == Material.AIR) {
-            this.plugin.getLogger().info("Clicked item is null or air in SelectCrate.");
+            this.plugin.debug(() ->"Clicked item is null or air in SelectCrate.");
             return;
         }
 
@@ -115,14 +115,14 @@ public class SelectCrateListener implements Listener {
 
         if (slot == confirmSlot) {
             handleConfirmClick(player, session, view);
-            this.plugin.getLogger().info("Player clicked the confirm button in SelectCrate.");
+            this.plugin.debug(() ->"Player clicked the confirm button in SelectCrate.");
             return;
         }
 
         // Check if clicked on a prize
         final Prize prize = crate.getPrize(clickedItem);
         if (prize == null) {
-            this.plugin.getLogger().info("Clicked item is not a valid prize in SelectCrate.");
+            this.plugin.debug(() ->"Clicked item is not a valid prize in SelectCrate.");
             return;
         }
 
