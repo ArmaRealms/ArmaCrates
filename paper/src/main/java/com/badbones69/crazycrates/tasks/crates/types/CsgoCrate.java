@@ -94,7 +94,7 @@ public class CsgoCrate extends CrateBuilder {
                         if (item != null) {
                             final Prize prize = getCrate().getPrize(item);
 
-                            PrizeManager.givePrize(getPlayer(), getCrate(), prize);
+                            PrizeManager.givePrizeAndCallEvent(getPlayer(), getCrate(), prize);
                         }
 
                         plugin.getCrateManager().removePlayerFromOpeningList(getPlayer());

@@ -10,6 +10,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
+tasks.clean {
+    delete(layout.projectDirectory.dir("jars"))
+}
+
 tasks.assemble {
     val jarsDir = rootDir.resolve("jars")
 

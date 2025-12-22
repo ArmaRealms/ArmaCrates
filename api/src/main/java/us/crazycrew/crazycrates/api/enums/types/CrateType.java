@@ -55,7 +55,11 @@ public enum CrateType {
     /**
      * Definitely going to war over what you win.
      */
-    war("War");
+    war("War"),
+    /**
+     * A crate where players select their prize from a GUI before receiving it.
+     */
+    select_crate("SelectCrate");
 
     private final String name;
 

@@ -30,25 +30,25 @@ public class WarCrateListener implements Listener {
     private final CrateManager crateManager = this.plugin.getCrateManager();
 
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        Inventory inventory = event.getInventory();
+    public void onInventoryClick(final InventoryClickEvent event) {
+        final Inventory inventory = event.getInventory();
 
         if (inventory.getHolder() == null) return;
-        if (!(inventory.getHolder(false) instanceof CratePrizeMenu holder)) return;
+        if (!(inventory.getHolder(false) instanceof final CratePrizeMenu holder)) return;
 
-        Player player = holder.getPlayer();
+        final Player player = holder.getPlayer();
 
         event.setCancelled(true);
 
         if (this.crateManager.containsPicker(player) && this.crateManager.isInOpeningList(player)) {
-            Crate crate = this.crateManager.getOpeningCrate(player);
+            final Crate crate = this.crateManager.getOpeningCrate(player);
 
             if (crate.getCrateType() == CrateType.war && this.crateManager.isPicker(player)) {
-                ItemStack item = event.getCurrentItem();
+                final ItemStack item = event.getCurrentItem();
 
                 if (item != null && item.getType().toString().contains(Material.GLASS_PANE.toString())) {
-                    int slot = event.getRawSlot();
-                    Prize prize = crate.pickPrize(player);
+                    final int slot = event.getRawSlot();
+                    final Prize prize = crate.pickPrize(player);
                     inventory.setItem(slot, prize.getDisplayItem(player));
 
                     if (this.crateManager.hasCrateTask(player)) this.crateManager.endCrate(player);
@@ -105,11 +105,11 @@ public class WarCrateListener implements Listener {
     }
 
     @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        Player player = (Player) event.getPlayer();
+    public void onInventoryClose(final InventoryCloseEvent event) {
+        final Player player = (Player) event.getPlayer();
 
         if (this.crateManager.containsPicker(player) && this.crateManager.isPicker(player)) {
-            for (Crate crate : this.crateManager.getUsableCrates()) {
+            for (final Crate crate : this.crateManager.getUsableCrates()) {
                 if (crate.getCrateType() == CrateType.war && event.getInventory().getHolder(false) instanceof CratePrizeMenu) {
                     if (this.crateManager.hasCrateTask(player)) {
                         this.crateManager.removeCloser(player);
