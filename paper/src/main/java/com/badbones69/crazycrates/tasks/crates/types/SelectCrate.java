@@ -27,7 +27,7 @@ public class SelectCrate extends CrateBuilder {
      * @param player the player opening the crate
      * @param size   the inventory size
      */
-    public SelectCrate(Crate crate, Player player, int size) {
+    public SelectCrate(final Crate crate, final Player player, final int size) {
         super(crate, player, size, getGuiTitle(crate));
     }
 
@@ -37,41 +37,41 @@ public class SelectCrate extends CrateBuilder {
      * @param crate the crate
      * @return the GUI title
      */
-    private static String getGuiTitle(Crate crate) {
-        FileConfiguration file = crate.getFile();
-        return file != null ? 
-            MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Select Your Prize!")) :
-            "&6Select Your Prize!";
+    private static String getGuiTitle(final Crate crate) {
+        final FileConfiguration file = crate.getFile();
+        return file != null ?
+                MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Select Your Prize!")) :
+                "&6Select Your Prize!";
     }
 
     @Override
-    public void open(KeyType type, boolean checkHand) {
+    public void open(final KeyType type, final boolean checkHand) {
         // If the crate event failed, return
         if (isCrateEventValid(type, checkHand)) {
             return;
         }
 
-        FileConfiguration file = getCrate().getFile();
+        final FileConfiguration file = getCrate().getFile();
 
         // Add prizes to the inventory
-        List<Prize> prizes = getCrate().getPrizes();
+        final List<Prize> prizes = getCrate().getPrizes();
         int slot = 0;
-        
-        for (Prize prize : prizes) {
+
+        for (final Prize prize : prizes) {
             if (slot >= getSize() - 9) { // Reserve bottom row for controls
                 break;
             }
-            
-            ItemStack displayItem = prize.getDisplayItem(getPlayer());
+
+            final ItemStack displayItem = prize.getDisplayItem(getPlayer());
             setItem(slot, displayItem);
             slot++;
         }
 
         // Add confirm button
-        int confirmSlot = file != null ? 
-            file.getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
-        
-        ItemBuilder confirmButton = getConfirmButton(file);
+        final int confirmSlot = file != null ?
+                file.getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
+
+        final ItemBuilder confirmButton = getConfirmButton(file);
         setItem(confirmSlot, confirmButton.build());
 
         // Store the key type and hand check for later use
@@ -93,29 +93,29 @@ public class SelectCrate extends CrateBuilder {
      * @param file the crate configuration file
      * @return the confirm button ItemBuilder
      */
-    private ItemBuilder getConfirmButton(FileConfiguration file) {
-        ItemBuilder builder = new ItemBuilder();
-        
+    private ItemBuilder getConfirmButton(final FileConfiguration file) {
+        final ItemBuilder builder = new ItemBuilder();
+
         if (file != null && file.contains("Crate.SelectCrate.Confirm.Item")) {
-            String material = file.getString("Crate.SelectCrate.Confirm.Item.Material", "LIME_CONCRETE");
-            String name = file.getString("Crate.SelectCrate.Confirm.Item.Name", "&aConfirmar escolha");
+            final String material = file.getString("Crate.SelectCrate.Confirm.Item.Material", "LIME_CONCRETE");
+            final String name = file.getString("Crate.SelectCrate.Confirm.Item.Name", "&aConfirmar escolha");
             List<String> lore = file.getStringList("Crate.SelectCrate.Confirm.Item.Lore");
-            
+
             if (lore.isEmpty()) {
                 lore = new ArrayList<>();
                 lore.add("&7Click to receive the selected prize.");
             }
-            
+
             builder.setMaterial(material)
-                   .setName(MsgUtils.color(name))
-                   .setLore(lore);
+                    .setName(MsgUtils.color(name))
+                    .setLore(lore);
         } else {
             // Default confirm button
             builder.setMaterial(Material.LIME_CONCRETE)
-                   .setName(MsgUtils.color("&aConfirm Choice"))
-                   .setLore(List.of(MsgUtils.color("&7Click to receive the selected prize.")));
+                    .setName(MsgUtils.color("&aConfirm Choice"))
+                    .setLore(List.of(MsgUtils.color("&7Click to receive the selected prize.")));
         }
-        
+
         return builder;
     }
 
@@ -125,29 +125,29 @@ public class SelectCrate extends CrateBuilder {
      * @param file the crate configuration file
      * @return the selection marker ItemBuilder
      */
-    public static ItemBuilder getSelectionMarker(FileConfiguration file) {
-        ItemBuilder builder = new ItemBuilder();
-        
+    public static ItemBuilder getSelectionMarker(final FileConfiguration file) {
+        final ItemBuilder builder = new ItemBuilder();
+
         if (file != null && file.contains("Crate.SelectCrate.SelectionMarker")) {
-            String material = file.getString("Crate.SelectCrate.SelectionMarker.Material", "NETHER_STAR");
-            String name = file.getString("Crate.SelectCrate.SelectionMarker.Name", "&eSelecionado");
+            final String material = file.getString("Crate.SelectCrate.SelectionMarker.Material", "NETHER_STAR");
+            final String name = file.getString("Crate.SelectCrate.SelectionMarker.Name", "&eSelecionado");
             List<String> lore = file.getStringList("Crate.SelectCrate.SelectionMarker.Lore");
-            
+
             if (lore.isEmpty()) {
                 lore = new ArrayList<>();
                 lore.add("&7This prize is selected.");
             }
-            
+
             builder.setMaterial(material)
-                   .setName(MsgUtils.color(name))
-                   .setLore(lore);
+                    .setName(MsgUtils.color(name))
+                    .setLore(lore);
         } else {
             // Default selection marker
             builder.setMaterial(Material.NETHER_STAR)
-                   .setName(MsgUtils.color("&eSelected"))
-                   .setLore(List.of(MsgUtils.color("&7This prize is selected.")));
+                    .setName(MsgUtils.color("&eSelected"))
+                    .setLore(List.of(MsgUtils.color("&7This prize is selected.")));
         }
-        
+
         return builder;
     }
 }

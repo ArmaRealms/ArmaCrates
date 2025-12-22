@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -58,14 +59,14 @@ public class SelectCrateListener implements Listener {
      * Handles inventory clicks in SelectCrate GUIs.
      */
     @EventHandler(priority = EventPriority.HIGH)
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    public void onInventoryClick(final InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof final Player player)) return;
 
-        Inventory inventory = event.getInventory();
-        if (!(inventory.getHolder(false) instanceof CrateBuilder holder)) return;
+        final Inventory inventory = event.getInventory();
+        if (!(inventory.getHolder(false) instanceof CrateBuilder)) return;
 
         // Check if player is opening a SelectCrate
-        Crate crate = this.crateManager.getOpeningCrate(player);
+        final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) return;
         if (!this.crateManager.isInOpeningList(player)) return;
 
@@ -73,23 +74,23 @@ public class SelectCrateListener implements Listener {
         event.setCancelled(true);
 
         // Get the raw slot clicked
-        int slot = event.getRawSlot();
-        InventoryView view = event.getView();
-        Inventory topInventory = view.getTopInventory();
+        final int slot = event.getRawSlot();
+        final InventoryView view = event.getView();
+        final Inventory topInventory = view.getTopInventory();
 
         // Check if clicking in the top inventory
         if (event.getClickedInventory() != topInventory) return;
 
-        ItemStack clickedItem = topInventory.getItem(slot);
+        final ItemStack clickedItem = topInventory.getItem(slot);
         if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
 
         // Get or create session
-        SelectCrateSession session = sessions.computeIfAbsent(player.getUniqueId(), 
-            k -> new SelectCrateSession(player, crate));
+        final SelectCrateSession session = sessions.computeIfAbsent(player.getUniqueId(),
+                k -> new SelectCrateSession(player, crate));
 
         // Check if clicked the confirm button
-        int confirmSlot = crate.getFile() != null ? 
-            crate.getFile().getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
+        final int confirmSlot = crate.getFile() != null ?
+                crate.getFile().getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
 
         if (slot == confirmSlot) {
             handleConfirmClick(player, session, view);
@@ -97,14 +98,14 @@ public class SelectCrateListener implements Listener {
         }
 
         // Check if clicked on a prize
-        ItemMeta itemMeta = clickedItem.getItemMeta();
+        final ItemMeta itemMeta = clickedItem.getItemMeta();
         if (itemMeta == null) return;
 
-        PersistentDataContainer container = itemMeta.getPersistentDataContainer();
+        final PersistentDataContainer container = itemMeta.getPersistentDataContainer();
         if (!container.has(PersistentKeys.crate_prize.getNamespacedKey())) return;
 
-        String prizeName = container.get(PersistentKeys.crate_prize.getNamespacedKey(), PersistentDataType.STRING);
-        Prize prize = crate.getPrize(prizeName);
+        final String prizeName = container.get(PersistentKeys.crate_prize.getNamespacedKey(), PersistentDataType.STRING);
+        final Prize prize = crate.getPrize(prizeName);
 
         if (prize == null) return;
 
@@ -115,12 +116,12 @@ public class SelectCrateListener implements Listener {
     /**
      * Handles prize selection by the player.
      */
-    private void handlePrizeSelection(Player player, SelectCrateSession session, Prize prize, 
-                                      int slot, Inventory inventory, Crate crate) {
+    private void handlePrizeSelection(final Player player, final SelectCrateSession session, final Prize prize,
+                                      final int slot, final Inventory inventory, final Crate crate) {
         // Clear previous selection marker if any
         if (session.hasSelection()) {
-            int previousSlot = session.getSelectedSlot();
-            Prize previousPrize = session.getSelectedPrize();
+            final int previousSlot = session.getSelectedSlot();
+            final Prize previousPrize = session.getSelectedPrize();
             if (previousPrize != null) {
                 inventory.setItem(previousSlot, previousPrize.getDisplayItem(player));
             }
@@ -130,19 +131,19 @@ public class SelectCrateListener implements Listener {
         session.setSelectedPrize(prize, slot);
 
         // Add visual marker (add glow enchantment)
-        ItemStack displayItem = prize.getDisplayItem(player);
-        ItemBuilder builder = ItemBuilder.convertItemStack(displayItem);
+        final ItemStack displayItem = prize.getDisplayItem(player);
+        final ItemBuilder builder = ItemBuilder.convertItemStack(displayItem);
         builder.setGlow(true);
-        
+
         // Add selection marker in lore
-        List<String> currentLore = new ArrayList<>(builder.getLore());
+        final List<String> currentLore = new ArrayList<>(builder.getLore());
         currentLore.add("");
-        
-        ItemBuilder markerBuilder = SelectCrate.getSelectionMarker(crate.getFile());
+
+        final ItemBuilder markerBuilder = SelectCrate.getSelectionMarker(crate.getFile());
         currentLore.add(markerBuilder.getName());
-        
+
         builder.setLore(currentLore);
-        
+
         inventory.setItem(slot, builder.build());
 
         // Play a sound
@@ -152,26 +153,26 @@ public class SelectCrateListener implements Listener {
     /**
      * Handles the confirm button click.
      */
-    private void handleConfirmClick(Player player, SelectCrateSession session, InventoryView view) {
-        Crate crate = session.getCrate();
+    private void handleConfirmClick(final Player player, final SelectCrateSession session, final InventoryView view) {
+        final Crate crate = session.getCrate();
 
         // Check if player has selected a prize
         if (!session.hasSelection()) {
-            String message = crate.getFile() != null ?
-                crate.getFile().getString("Crate.SelectCrate.Messages.NoSelection", "&cPlease select a prize before confirming.") :
-                "&cPlease select a prize before confirming.";
+            final String message = crate.getFile() != null ?
+                    crate.getFile().getString("Crate.SelectCrate.Messages.NoSelection", "&cPlease select a prize before confirming.") :
+                    "&cPlease select a prize before confirming.";
             player.sendMessage(MsgUtils.color(message));
             return;
         }
 
-        UUID uuid = player.getUniqueId();
-        String crateName = crate.getName();
-        KeyType type = this.crateManager.getPlayerKeyType(player);
+        final UUID uuid = player.getUniqueId();
+        final String crateName = crate.getName();
+        final KeyType type = this.crateManager.getPlayerKeyType(player);
 
         // Validate player still has keys (only for physical keys)
         if (type == KeyType.physical_key) {
-            boolean hasPhysicalKey = this.plugin.getUserManager().hasPhysicalKey(uuid, crateName, this.crateManager.getHand(player));
-            
+            final boolean hasPhysicalKey = this.plugin.getUserManager().hasPhysicalKey(uuid, crateName, this.crateManager.getHand(player));
+
             if (!hasPhysicalKey) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
                 cleanupSession(player);
@@ -181,14 +182,14 @@ public class SelectCrateListener implements Listener {
         }
 
         // Take the key - takeKeys returns true on success, false on failure
-        boolean failedToTakeKeys = this.crateManager.hasPlayerKeyType(player) && 
-            !this.plugin.getUserManager().takeKeys(
-                crate.getRequiredKeys() > 0 ? crate.getRequiredKeys() : 1, 
-                uuid, 
-                crateName, 
-                type, 
-                this.crateManager.getHand(player)
-            );
+        final boolean failedToTakeKeys = this.crateManager.hasPlayerKeyType(player) &&
+                !this.plugin.getUserManager().takeKeys(
+                        crate.getRequiredKeys() > 0 ? crate.getRequiredKeys() : 1,
+                        uuid,
+                        crateName,
+                        type,
+                        this.crateManager.getHand(player)
+                );
 
         if (failedToTakeKeys) {
             MiscUtils.failedToTakeKey(player, crate);
@@ -198,12 +199,12 @@ public class SelectCrateListener implements Listener {
         }
 
         // Give the selected prize
-        Prize selectedPrize = session.getSelectedPrize();
+        final Prize selectedPrize = session.getSelectedPrize();
         PrizeManager.givePrize(player, selectedPrize, crate);
 
         // Fire the prize event
         this.plugin.getServer().getPluginManager().callEvent(
-            new PlayerPrizeEvent(player, crate, crateName, selectedPrize));
+                new PlayerPrizeEvent(player, crate, crateName, selectedPrize));
 
         // Play sound
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
@@ -213,11 +214,11 @@ public class SelectCrateListener implements Listener {
         player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
 
         // Send success messages from the prize
-        for (String message : crate.getPrizeMessage()) {
+        for (final String message : crate.getPrizeMessage()) {
             player.sendMessage(MsgUtils.color(message
-                .replace("%crate%", crate.getName())
-                .replace("%prize%", selectedPrize.getPrizeName())
-                .replace("%player%", player.getName())));
+                    .replace("%crate%", crate.getName())
+                    .replace("%prize%", Objects.requireNonNull(selectedPrize).getPrizeName())
+                    .replace("%player%", player.getName())));
         }
     }
 
@@ -225,10 +226,10 @@ public class SelectCrateListener implements Listener {
      * Handles inventory close events for SelectCrate.
      */
     @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) return;
+    public void onInventoryClose(final InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof final Player player)) return;
 
-        Crate crate = this.crateManager.getOpeningCrate(player);
+        final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) return;
 
         // Only cleanup if not closing due to plugin (which means it was a manual close)
@@ -241,10 +242,10 @@ public class SelectCrateListener implements Listener {
      * Prevents dragging items in SelectCrate GUIs.
      */
     @EventHandler
-    public void onInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+    public void onInventoryDrag(final InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof final Player player)) return;
 
-        Crate crate = this.crateManager.getOpeningCrate(player);
+        final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) return;
 
         event.setCancelled(true);
@@ -254,10 +255,10 @@ public class SelectCrateListener implements Listener {
      * Cleans up sessions when players quit.
      */
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        Crate crate = this.crateManager.getOpeningCrate(player);
-        
+    public void onPlayerQuit(final PlayerQuitEvent event) {
+        final Player player = event.getPlayer();
+        final Crate crate = this.crateManager.getOpeningCrate(player);
+
         if (crate != null && crate.getCrateType() == CrateType.select_crate) {
             cleanupSession(player);
         }
@@ -266,12 +267,12 @@ public class SelectCrateListener implements Listener {
     /**
      * Cleans up a player's SelectCrate session.
      */
-    private void cleanupSession(Player player) {
-        UUID uuid = player.getUniqueId();
-        
+    private void cleanupSession(final Player player) {
+        final UUID uuid = player.getUniqueId();
+
         // Remove session
         sessions.remove(uuid);
-        
+
         // Remove from opening list
         this.crateManager.removePlayerFromOpeningList(player);
         this.crateManager.removePlayerKeyType(player);
