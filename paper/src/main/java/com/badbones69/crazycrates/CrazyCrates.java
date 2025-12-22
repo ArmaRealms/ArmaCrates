@@ -17,6 +17,7 @@ import com.badbones69.crazycrates.listeners.crates.CosmicCrateListener;
 import com.badbones69.crazycrates.listeners.crates.CrateOpenListener;
 import com.badbones69.crazycrates.listeners.crates.MobileCrateListener;
 import com.badbones69.crazycrates.listeners.crates.QuadCrateListener;
+import com.badbones69.crazycrates.listeners.crates.SelectCrateListener;
 import com.badbones69.crazycrates.listeners.crates.WarCrateListener;
 import com.badbones69.crazycrates.listeners.other.EntityDamageListener;
 import com.badbones69.crazycrates.support.PluginSupport;
@@ -78,6 +79,7 @@ public class CrazyCrates extends JavaPlugin {
                 new EntityDamageListener(),
                 new MobileCrateListener(),
                 new CosmicCrateListener(),
+                new SelectCrateListener(),
                 new QuadCrateListener(),
                 new CrateOpenListener(),
                 new WarCrateListener(),

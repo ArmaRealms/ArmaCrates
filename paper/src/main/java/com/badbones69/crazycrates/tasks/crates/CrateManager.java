@@ -29,6 +29,7 @@ import com.badbones69.crazycrates.tasks.crates.types.FireCrackerCrate;
 import com.badbones69.crazycrates.tasks.crates.types.QuadCrate;
 import com.badbones69.crazycrates.tasks.crates.types.QuickCrate;
 import com.badbones69.crazycrates.tasks.crates.types.RouletteCrate;
+import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WarCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WheelCrate;
 import com.badbones69.crazycrates.tasks.crates.types.WonderCrate;
@@ -404,6 +405,12 @@ public class CrateManager {
             case roulette -> crateBuilder = new RouletteCrate(crate, player, 45);
             case war -> crateBuilder = new WarCrate(crate, player, 9);
             case cosmic -> crateBuilder = new CosmicCrate(crate, player, 27);
+            case select_crate -> {
+                // Get GUI size from config or use default (54 slots = 6 rows)
+                int guiSize = crate.getFile() != null ? 
+                    crate.getFile().getInt("Crate.SelectCrate.GUI.Size", 54) : 54;
+                crateBuilder = new SelectCrate(crate, player, guiSize);
+            }
             case quad_crate -> {
                 if (virtualCrate) {
                     player.sendMessage(Messages.cant_be_a_virtual_crate.getMessage(player));
