@@ -40,24 +40,24 @@ Crate:
   SelectCrate:
     GUI:
       Size: 54  # Must be 9, 18, 27, 36, 45, or 54
-      Title: '&6Selecione seu prêmio!'
+      Title: '&6Select Your Prize!'
     
     Confirm:
       Slot: 49  # Bottom right of 6-row inventory
       Item:
         Material: LIME_CONCRETE
-        Name: '&aConfirmar escolha'
+        Name: '&aConfirm Choice'
         Lore:
-          - '&7Clique para receber o prêmio selecionado.'
+          - '&7Click to receive the selected prize.'
     
     SelectionMarker:
       Material: NETHER_STAR
-      Name: '&e&l✓ SELECIONADO'
+      Name: '&e&l✓ SELECTED'
       Lore:
-        - '&7Este prêmio está selecionado.'
+        - '&7This prize is selected.'
     
     Messages:
-      NoSelection: '&cSelecione um prêmio antes de confirmar!'
+      NoSelection: '&cPlease select a prize before confirming!'
 ```
 
 ### Prize Configuration
@@ -71,7 +71,7 @@ Prizes in SelectCrate work the same as other crate types, but MaxRange and Chanc
       DisplayItem: 'DIAMOND_SWORD'
       DisplayAmount: 1
       Lore:
-        - '&7Uma espada poderosa!'
+        - '&7A powerful sword!'
       Items:
         - 'Item:DIAMOND_SWORD, Amount:1, Enchantments:DAMAGE_ALL-5'
     
@@ -80,7 +80,7 @@ Prizes in SelectCrate work the same as other crate types, but MaxRange and Chanc
       DisplayItem: 'EMERALD'
       DisplayAmount: 32
       Lore:
-        - '&7Receba $10,000!'
+        - '&7Receive $10,000!'
       Commands:
         - 'eco give %player% 10000'
 ```
