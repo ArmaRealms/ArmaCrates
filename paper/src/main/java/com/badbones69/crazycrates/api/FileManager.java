@@ -275,20 +275,11 @@ public class FileManager {
                         for (final String name : folder) {
                             if (!name.endsWith(".yml")) continue;
 
-                            foundFiles.add("/crates/" + directory.getName() + "/" + name);
                             final String subFolder = directory.getName();
+                            foundFiles.add("/crates/" + subFolder + "/" + name);
 
                             // Check if file is already registered
-                            boolean alreadyRegistered = false;
-                            for (final CustomFile existingFile : existingCrateFiles) {
-                                if (existingFile.getFileName().equals(name) && 
-                                    existingFile.getHomeFolder().equals("/crates/" + subFolder)) {
-                                    alreadyRegistered = true;
-                                    break;
-                                }
-                            }
-
-                            if (!alreadyRegistered) {
+                            if (!isFileRegistered(existingCrateFiles, name, "/crates/" + subFolder)) {
                                 final CustomFile file = new CustomFile(name, "/crates/", subFolder);
                                 if (file.exists()) {
                                     this.customFiles.add(file);
@@ -307,16 +298,7 @@ public class FileManager {
                     foundFiles.add("/crates/" + name);
 
                     // Check if file is already registered
-                    boolean alreadyRegistered = false;
-                    for (final CustomFile existingFile : existingCrateFiles) {
-                        if (existingFile.getFileName().equals(name) && 
-                            existingFile.getHomeFolder().equals("/crates")) {
-                            alreadyRegistered = true;
-                            break;
-                        }
-                    }
-
-                    if (!alreadyRegistered) {
+                    if (!isFileRegistered(existingCrateFiles, name, "/crates")) {
                         final CustomFile file = new CustomFile(name, "/crates");
                         if (file.exists()) {
                             this.customFiles.add(file);
@@ -341,6 +323,23 @@ public class FileManager {
         }
 
         this.customFiles.removeAll(filesToRemove);
+    }
+
+    /**
+     * Helper method to check if a file is already registered.
+     *
+     * @param existingFiles list of existing custom files
+     * @param fileName      the file name to check
+     * @param homeFolder    the home folder path
+     * @return true if the file is already registered, false otherwise
+     */
+    private boolean isFileRegistered(final List<CustomFile> existingFiles, final String fileName, final String homeFolder) {
+        for (final CustomFile existingFile : existingFiles) {
+            if (existingFile.getFileName().equals(fileName) && existingFile.getHomeFolder().equals(homeFolder)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
