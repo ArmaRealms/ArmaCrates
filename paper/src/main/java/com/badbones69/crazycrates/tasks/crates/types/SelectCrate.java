@@ -28,7 +28,20 @@ public class SelectCrate extends CrateBuilder {
      * @param size   the inventory size
      */
     public SelectCrate(Crate crate, Player player, int size) {
-        super(crate, player, size);
+        super(crate, player, size, getGuiTitle(crate));
+    }
+
+    /**
+     * Gets the GUI title from config or returns default.
+     *
+     * @param crate the crate
+     * @return the GUI title
+     */
+    private static String getGuiTitle(Crate crate) {
+        FileConfiguration file = crate.getFile();
+        return file != null ? 
+            MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Selecione seu prêmio!")) :
+            "&6Selecione seu prêmio!";
     }
 
     @Override
@@ -39,13 +52,6 @@ public class SelectCrate extends CrateBuilder {
         }
 
         FileConfiguration file = getCrate().getFile();
-        
-        // Get inventory title from config or use default
-        String title = file != null ? 
-            MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Selecione seu prêmio!")) :
-            "&6Selecione seu prêmio!";
-        
-        setTitle(title);
 
         // Add prizes to the inventory
         List<Prize> prizes = getCrate().getPrizes();
