@@ -1,0 +1,174 @@
+Crate:
+  # Type of crate -> SelectCrate allows players to choose their prize
+  # See the wiki for detailed documentation: https://docs.crazycrew.us/crazycrates/home
+  CrateType: SelectCrate
+  # Name of the Inventory if a GUI crate.
+  CrateName: '&6&lSelect Crate'
+  # The name of the inventory that will be in the preview GUI.
+  Preview-Name: '&6Select Crate Preview'
+  # Starting amount of keys when the player 1st joins.
+  StartingKeys: 0
+  # The amount of keys required to use the crate.
+  # Keys are consumed only when the player confirms their selection.
+  RequiredKeys: 1
+  # Max amount of crates that can be opened at once using /cc mass-open
+  Max-Mass-Open: 10
+  # If the crate shows in the /cc GUI.
+  InGUI: true
+  # Slot the item is in the GUI.
+  Slot: 14
+  # Enables/Disables the Broadcasts message when they open a crate.
+  OpeningBroadCast: true
+  # Message that is broadcast when opening the crate.
+  BroadCast: '%prefix%&6&l%player%&r &7is choosing a prize from the &6&lSelect Crate.'
+  # SelectCrate specific configuration
+  SelectCrate:
+    GUI:
+      # Size of the selection GUI (must be a multiple of 9, max 54)
+      Size: 54
+      # Title shown at the top of the selection GUI
+      Title: '&6Select Your Prize!'
+    # Confirm button settings
+    Confirm:
+      # Slot where the confirm button appears (default: 49, bottom-right of 6-row GUI)
+      Slot: 49
+      Item:
+        # Material of the confirm button
+        Material: LIME_CONCRETE
+        # Display name of the confirm button
+        Name: '&aConfirm Choice'
+        # Lore shown when hovering over the confirm button
+        Lore:
+          - '&7Click to receive the selected prize.'
+    # Visual marker for selected prize
+    SelectionMarker:
+      # Name added to lore when item is selected
+      Name: '&e&l✓ SELECTED'
+    # Custom messages
+    Messages:
+      # Message shown when player tries to confirm without selecting a prize
+      NoSelection: '&cPlease select a prize before confirming!'
+  # Item the crate is in the GUI
+  Item: 'ENDER_CHEST'
+  # If the crate in the main /cc GUI is glowing or not.
+  Glowing: true
+  # Name of the item in the GUI.
+  Name: '&6&lSelect Crate'
+  # The lore of the item in the GUI.
+  Lore:
+    - '&7Choose your own prize!'
+    - '&7You have &6%keys% keys &7to open this crate.'
+    - '&7You have opened this crate: &6%crate_opened% times'
+    - '&7&l(&e&l!&7&l) Right-click to view rewards.'
+  Preview:
+    # Turn on and off the preview for this crate.
+    Toggle: true
+    # How many lines the Crate Preview should have. Including Header and Bottom (Between 3 and 6)
+    ChestLines: 6
+    Glass:
+      # Turn the glass border in the preview on and off.
+      Toggle: true
+      # The name of the border item.
+      Name: ' '
+      # The item that shows in the border.
+      Item: 'YELLOW_STAINED_GLASS_PANE'
+  PhysicalKey:
+    # Name of the Key.
+    Name: '&6&lSelect Crate &e&lKey'
+    # Lore of the Key.
+    Lore:
+      - '&7A special key'
+      - '&7that lets you choose your prize!'
+    # The item the key is.
+    Item: 'TRIPWIRE_HOOK'
+    # Makes the key look enchanted.
+    Glowing: true
+  # Settings for the holograms.
+  Hologram:
+    # Toggle on and off the holograms for the crates.
+    Toggle: true
+    # The height of the hologram above the crate.
+    Height: 1.5
+    # The distance the hologram can be seen.
+    Range: 8
+    # The message that will be displayed.
+    Message:
+      - '&6&lSelect Crate'
+      - '&eChoose your prize!'
+  # All the prizes that can be won from the Crate.
+  # In SelectCrate, all prizes are displayed and the player chooses one.
+  Prizes:
+    1:
+      DisplayName: '&e&lDiamond Sword'
+      DisplayItem: 'DIAMOND_SWORD'
+      DisplayAmount: 1
+      Lore:
+        - '&7A powerful diamond sword!'
+        - '&7Perfect for combat.'
+      # For SelectCrate, MaxRange and Chance are not used
+      # All prizes are available for selection
+      MaxRange: 100
+      Chance: 100
+      # Items given to the player
+      Items:
+        - 'Item:DIAMOND_SWORD, Amount:1, Damage:0, Name:&c&lWarrior Sword, Enchantments:DAMAGE_ALL-5:FIRE_ASPECT-2'
+    2:
+      DisplayName: '&b&lDiamond Armor Set'
+      DisplayItem: 'DIAMOND_CHESTPLATE'
+      DisplayAmount: 1
+      Lore:
+        - '&7A full set of diamond armor!'
+        - '&7Protect yourself in style.'
+      MaxRange: 100
+      Chance: 100
+      Items:
+        - 'Item:DIAMOND_HELMET, Amount:1, Damage:0, Enchantments:PROTECTION_ENVIRONMENTAL-4'
+        - 'Item:DIAMOND_CHESTPLATE, Amount:1, Damage:0, Enchantments:PROTECTION_ENVIRONMENTAL-4'
+        - 'Item:DIAMOND_LEGGINGS, Amount:1, Damage:0, Enchantments:PROTECTION_ENVIRONMENTAL-4'
+        - 'Item:DIAMOND_BOOTS, Amount:1, Damage:0, Enchantments:PROTECTION_ENVIRONMENTAL-4'
+    3:
+      DisplayName: '&6&l64 Gold Ingots'
+      DisplayItem: 'GOLD_INGOT'
+      DisplayAmount: 64
+      Lore:
+        - '&7A full stack of gold bars!'
+        - '&7Get rich instantly.'
+      MaxRange: 100
+      Chance: 100
+      Items:
+        - 'Item:GOLD_INGOT, Amount:64'
+    4:
+      DisplayName: '&a&lMoney Bundle'
+      DisplayItem: 'EMERALD'
+      DisplayAmount: 32
+      Lore:
+        - '&7Receive $10,000!'
+        - '&7Perfect for starting your business.'
+      MaxRange: 100
+      Chance: 100
+      Commands:
+        - 'eco give %player% 10000'
+      Messages:
+        - '&aYou received $10,000!'
+    5:
+      DisplayName: '&d&lEnchanted Book'
+      DisplayItem: 'ENCHANTED_BOOK'
+      DisplayAmount: 1
+      Lore:
+        - '&7A rare enchanted book!'
+        - '&7Fortune III'
+      MaxRange: 100
+      Chance: 100
+      Items:
+        - 'Item:ENCHANTED_BOOK, Amount:1, Stored-Enchantments:LOOT_BONUS_BLOCKS-3'
+    6:
+      DisplayName: '&c&lRare Potion'
+      DisplayItem: 'POTION'
+      DisplayAmount: 3
+      Lore:
+        - '&7Strength II potions!'
+        - '&7Get stronger.'
+      MaxRange: 100
+      Chance: 100
+      Items:
+        - 'Item:POTION, Amount:3, PotionType:STRENGTH, Level:2'

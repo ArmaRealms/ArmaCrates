@@ -17,6 +17,7 @@ import com.badbones69.crazycrates.listeners.crates.CosmicCrateListener;
 import com.badbones69.crazycrates.listeners.crates.CrateOpenListener;
 import com.badbones69.crazycrates.listeners.crates.MobileCrateListener;
 import com.badbones69.crazycrates.listeners.crates.QuadCrateListener;
+import com.badbones69.crazycrates.listeners.crates.SelectCrateListener;
 import com.badbones69.crazycrates.listeners.crates.WarCrateListener;
 import com.badbones69.crazycrates.listeners.other.EntityDamageListener;
 import com.badbones69.crazycrates.support.PluginSupport;
@@ -78,6 +79,7 @@ public class CrazyCrates extends JavaPlugin {
                 new EntityDamageListener(),
                 new MobileCrateListener(),
                 new CosmicCrateListener(),
+                new SelectCrateListener(),
                 new QuadCrateListener(),
                 new CrateOpenListener(),
                 new WarCrateListener(),
@@ -85,10 +87,10 @@ public class CrazyCrates extends JavaPlugin {
         ).forEach(listener -> getServer().getPluginManager().registerEvents(listener, this));
 
         if (isLogging()) {
-            String prefix = this.crazyHandler.getConfigManager().getConfig().getProperty(ConfigKeys.console_prefix);
+            final String prefix = this.crazyHandler.getConfigManager().getConfig().getProperty(ConfigKeys.console_prefix);
 
             // Print dependency garbage
-            for (PluginSupport value : PluginSupport.values()) {
+            for (final PluginSupport value : PluginSupport.values()) {
                 if (value.isPluginEnabled()) {
                     getServer().getConsoleSender().sendMessage(MsgUtils.color(prefix + "&6&l " + value.name() + " &a&lFOUND"));
                 } else {
@@ -166,7 +168,7 @@ public class CrazyCrates extends JavaPlugin {
 
     private void registerPermissions() {
         Arrays.stream(Permissions.values()).toList().forEach(permission -> {
-            Permission newPermission = new Permission(
+            final Permission newPermission = new Permission(
                     permission.getPermission(),
                     permission.getDescription(),
                     permission.isDefault(),
@@ -177,7 +179,11 @@ public class CrazyCrates extends JavaPlugin {
         });
     }
 
-    public void debug(Supplier<String> message, Level level) {
+    public void debug(final Supplier<String> message) {
+        if (isLogging()) getLogger().log(Level.INFO, message.get());
+    }
+
+    public void debug(final Supplier<String> message, final Level level) {
         if (isLogging()) getLogger().log(level, message.get());
     }
 }
