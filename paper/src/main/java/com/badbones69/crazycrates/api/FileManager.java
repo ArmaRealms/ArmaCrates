@@ -244,19 +244,20 @@ public class FileManager {
      * while the server was running, and to remove files that were deleted.
      */
     public void rescanCrateDirectory() {
-        final File crateDirectory = new File(this.plugin.getDataFolder(), "/crates");
+        final String homeFolder = "/crates";
+        final File crateDirectory = new File(this.plugin.getDataFolder(), homeFolder);
 
         // Ensure the directory exists
         if (!crateDirectory.exists()) {
             crateDirectory.mkdirs();
-            if (this.isLogging) this.logger.info("The folder /crates was not found so it was created.");
+            if (this.isLogging) this.logger.info("The folder " + homeFolder + " was not found so it was created.");
             return;
         }
 
         // Track existing files for removal detection
         final List<CustomFile> existingCrateFiles = new ArrayList<>();
         for (final CustomFile file : this.customFiles) {
-            if (file.getHomeFolder().equals("/crates") || file.getHomeFolder().startsWith("/crates/")) {
+            if (file.getHomeFolder().equals(homeFolder) || file.getHomeFolder().startsWith(homeFolder + "/")) {
                 existingCrateFiles.add(file);
             }
         }
@@ -276,15 +277,16 @@ public class FileManager {
                             if (!name.endsWith(".yml")) continue;
 
                             final String subFolder = directory.getName();
-                            foundFiles.add("/crates/" + subFolder + "/" + name);
+                            final String expectedHomeFolder = homeFolder + "/" + subFolder;
+                            foundFiles.add(expectedHomeFolder + "/" + name);
 
                             // Check if file is already registered
-                            if (!isFileRegistered(existingCrateFiles, name, "/crates/" + subFolder)) {
-                                final CustomFile file = new CustomFile(name, "/crates/", subFolder);
+                            if (!isFileRegistered(existingCrateFiles, name, expectedHomeFolder)) {
+                                final CustomFile file = new CustomFile(name, homeFolder + "/", subFolder);
                                 if (file.exists()) {
                                     this.customFiles.add(file);
                                     if (this.isLogging)
-                                        this.logger.info("Registered new crate file: /crates/" + subFolder + "/" + name);
+                                        this.logger.info("Registered new crate file: " + expectedHomeFolder + "/" + name);
                                 }
                             }
                         }
@@ -295,15 +297,15 @@ public class FileManager {
 
                     if (!name.endsWith(".yml")) continue;
 
-                    foundFiles.add("/crates/" + name);
+                    foundFiles.add(homeFolder + "/" + name);
 
                     // Check if file is already registered
-                    if (!isFileRegistered(existingCrateFiles, name, "/crates")) {
-                        final CustomFile file = new CustomFile(name, "/crates");
+                    if (!isFileRegistered(existingCrateFiles, name, homeFolder)) {
+                        final CustomFile file = new CustomFile(name, homeFolder);
                         if (file.exists()) {
                             this.customFiles.add(file);
                             if (this.isLogging)
-                                this.logger.info("Registered new crate file: /crates/" + name);
+                                this.logger.info("Registered new crate file: " + homeFolder + "/" + name);
                         }
                     }
                 }
