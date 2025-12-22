@@ -144,7 +144,7 @@ public class PrizeManager {
      * @param crate  the player is opening.
      * @param prize  the player is being given.
      */
-    public static void givePrize(final Player player, final Crate crate, final Prize prize) {
+    public static void givePrizeAndCallEvent(final Player player, final Crate crate, final Prize prize) {
         if (prize != null) {
             givePrize(player, prize, crate);
 

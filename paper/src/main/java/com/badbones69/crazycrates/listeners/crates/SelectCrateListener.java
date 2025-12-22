@@ -217,11 +217,7 @@ public class SelectCrateListener implements Listener {
 
         // Give the selected prize
         final Prize selectedPrize = session.getSelectedPrize();
-        PrizeManager.givePrize(player, selectedPrize, crate);
-
-        // Fire the prize event
-        this.plugin.getServer().getPluginManager().callEvent(
-                new PlayerPrizeEvent(player, crate, crateName, selectedPrize));
+        PrizeManager.givePrizeAndCallEvent(player, crate, selectedPrize);
 
         // Play sound
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);

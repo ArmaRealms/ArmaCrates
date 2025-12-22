@@ -23,18 +23,18 @@ public class WheelCrate extends CrateBuilder {
 
     private final HashMap<UUID, HashMap<Integer, ItemStack>> rewards = new HashMap<>();
 
-    public WheelCrate(Crate crate, Player player, int size) {
+    public WheelCrate(final Crate crate, final Player player, final int size) {
         super(crate, player, size);
     }
 
     @Override
-    public void open(KeyType type, boolean checkHand) {
+    public void open(final KeyType type, final boolean checkHand) {
         // Crate event failed so we return.
         if (isCrateEventValid(type, checkHand)) {
             return;
         }
 
-        boolean keyCheck = this.plugin.getCrazyHandler().getUserManager().takeKeys(1, getPlayer().getUniqueId(), getCrate().getName(), type, checkHand);
+        final boolean keyCheck = this.plugin.getCrazyHandler().getUserManager().takeKeys(1, getPlayer().getUniqueId(), getCrate().getName(), type, checkHand);
 
         if (!keyCheck) {
             // Send the message about failing to take the key.
@@ -50,10 +50,10 @@ public class WheelCrate extends CrateBuilder {
             setCustomGlassPane(index);
         }
 
-        HashMap<Integer, ItemStack> items = new HashMap<>();
+        final HashMap<Integer, ItemStack> items = new HashMap<>();
 
-        for (int number : getBorder()) {
-            Prize prize = getCrate().pickPrize(getPlayer());
+        for (final int number : getBorder()) {
+            final Prize prize = getCrate().pickPrize(getPlayer());
             setItem(number, prize.getDisplayItem(getPlayer()));
             items.put(number, prize.getDisplayItem(getPlayer()));
         }
@@ -106,7 +106,7 @@ public class WheelCrate extends CrateBuilder {
                             prize = getCrate().getPrize(rewards.get(getPlayer().getUniqueId()).get(this.slots.get(this.what)));
                         }
 
-                        PrizeManager.givePrize(getPlayer(), getCrate(), prize);
+                        PrizeManager.givePrizeAndCallEvent(getPlayer(), getCrate(), prize);
 
                         playSound("stop-sound", SoundCategory.PLAYERS, "ENTITY_PLAYER_LEVELUP");
 
@@ -128,19 +128,19 @@ public class WheelCrate extends CrateBuilder {
             }
 
             private void lore() {
-                HashMap<Integer, ItemStack> map = rewards.get(getPlayer().getUniqueId());
+                final HashMap<Integer, ItemStack> map = rewards.get(getPlayer().getUniqueId());
 
-                int slot = this.slots.get(this.uh);
+                final int slot = this.slots.get(this.uh);
 
-                ItemStack item = map.get(slot);
+                final ItemStack item = map.get(slot);
 
-                ItemMeta itemMeta = item.getItemMeta();
+                final ItemMeta itemMeta = item.getItemMeta();
 
-                boolean hasLore = item.getItemMeta().hasLore();
+                final boolean hasLore = item.getItemMeta().hasLore();
 
-                Material material = Material.LIME_STAINED_GLASS_PANE;
+                final Material material = Material.LIME_STAINED_GLASS_PANE;
 
-                String name = itemMeta.getDisplayName();
+                final String name = itemMeta.getDisplayName();
 
                 if (hasLore) {
                     setItem(slot, material, name, itemMeta.getLore());
@@ -148,7 +148,7 @@ public class WheelCrate extends CrateBuilder {
                     setItem(slot, material, name);
                 }
 
-                int other = this.slots.get(this.what);
+                final int other = this.slots.get(this.what);
 
                 setItem(other, map.get(other));
                 playSound("cycle-sound", SoundCategory.MUSIC, "BLOCK_NOTE_BLOCK_XYLOPHONE");
