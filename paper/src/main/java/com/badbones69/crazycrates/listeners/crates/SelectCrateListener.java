@@ -3,6 +3,7 @@ package com.badbones69.crazycrates.listeners.crates;
 import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.api.PrizeManager;
 import com.badbones69.crazycrates.api.builders.CrateBuilder;
+import com.badbones69.crazycrates.api.builders.types.CratePrizeMenu;
 import com.badbones69.crazycrates.api.enums.Messages;
 import com.badbones69.crazycrates.api.enums.PersistentKeys;
 import com.badbones69.crazycrates.api.events.PlayerPrizeEvent;
@@ -14,6 +15,7 @@ import com.badbones69.crazycrates.api.utils.MsgUtils;
 import com.badbones69.crazycrates.tasks.crates.CrateManager;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateSession;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
@@ -60,15 +62,28 @@ public class SelectCrateListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(final InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof final Player player)) return;
+        if (!(event.getWhoClicked() instanceof final Player player)) {
+            this.plugin.getLogger().info("Non-player entity tried to interact with a SelectCrate inventory.");
+            return;
+        }
 
         final Inventory inventory = event.getInventory();
-        if (!(inventory.getHolder(false) instanceof CrateBuilder)) return;
+        if (!(inventory.getHolder(false) instanceof CratePrizeMenu)) {
+            this.plugin.getLogger().info("Inventory holder is not a CratePrizeMenu.");
+            return;
+        }
 
         // Check if player is opening a SelectCrate
         final Crate crate = this.crateManager.getOpeningCrate(player);
-        if (crate == null || crate.getCrateType() != CrateType.select_crate) return;
-        if (!this.crateManager.isInOpeningList(player)) return;
+        if (crate == null || crate.getCrateType() != CrateType.select_crate) {
+            this.plugin.getLogger().info("Player is not opening a SelectCrate.");
+            return;
+        }
+
+        if (!this.crateManager.isInOpeningList(player)) {
+            this.plugin.getLogger().info("Player is not in the opening list for SelectCrate.");
+            return;
+        }
 
         // Cancel the event to prevent item movement
         event.setCancelled(true);
@@ -79,10 +94,16 @@ public class SelectCrateListener implements Listener {
         final Inventory topInventory = view.getTopInventory();
 
         // Check if clicking in the top inventory
-        if (event.getClickedInventory() != topInventory) return;
+        if (event.getClickedInventory() != topInventory) {
+            this.plugin.getLogger().info("Clicked inventory is not the top inventory in SelectCrate.");
+            return;
+        }
 
         final ItemStack clickedItem = topInventory.getItem(slot);
-        if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
+        if (clickedItem == null || clickedItem.getType() == Material.AIR) {
+            this.plugin.getLogger().info("Clicked item is null or air in SelectCrate.");
+            return;
+        }
 
         // Get or create session
         final SelectCrateSession session = sessions.computeIfAbsent(player.getUniqueId(),
@@ -94,20 +115,16 @@ public class SelectCrateListener implements Listener {
 
         if (slot == confirmSlot) {
             handleConfirmClick(player, session, view);
+            this.plugin.getLogger().info("Player clicked the confirm button in SelectCrate.");
             return;
         }
 
         // Check if clicked on a prize
-        final ItemMeta itemMeta = clickedItem.getItemMeta();
-        if (itemMeta == null) return;
-
-        final PersistentDataContainer container = itemMeta.getPersistentDataContainer();
-        if (!container.has(PersistentKeys.crate_prize.getNamespacedKey())) return;
-
-        final String prizeName = container.get(PersistentKeys.crate_prize.getNamespacedKey(), PersistentDataType.STRING);
-        final Prize prize = crate.getPrize(prizeName);
-
-        if (prize == null) return;
+        final Prize prize = crate.getPrize(clickedItem);
+        if (prize == null) {
+            this.plugin.getLogger().info("Clicked item is not a valid prize in SelectCrate.");
+            return;
+        }
 
         // Handle prize selection
         handlePrizeSelection(player, session, prize, slot, topInventory, crate);
