@@ -132,6 +132,7 @@ public class PrizeManager {
                 .replaceAll("%player%", quoteReplacement(player.getName()))
                 .replaceAll("%Player%", quoteReplacement(player.getName()))
                 .replaceAll("%reward%", quoteReplacement(name))
+                .replaceAll("%prize%", quoteReplacement(name))
                 .replaceAll("%crate%", quoteReplacement(crate.getCrateInventoryName()));
 
         MsgUtils.sendMessage(player, MiscUtils.isPapiActive() ? PlaceholderAPI.setPlaceholders(player, defaultMessage) : defaultMessage, false);
