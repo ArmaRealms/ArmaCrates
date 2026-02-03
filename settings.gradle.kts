@@ -22,7 +22,7 @@ dependencyResolutionManagement {
             library("cluster_api", "com.ryderbelserion.cluster", "paper").versionRef("cluster")
             library("placeholderapi", "me.clip", "placeholderapi").version("2.11.7")
             library("nbtapi", "de.tr7zw", "item-nbt-api").version("2.15.5")
-            library("oraxen", "io.th0rgal", "oraxen").version("1.206.0")
+            library("oraxen", "io.th0rgal", "oraxen").version("1.207.0")
             library("configme", "ch.jalu", "configme").version("1.4.1")
         }
     }
