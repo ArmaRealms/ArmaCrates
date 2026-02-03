@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jspecify.annotations.NonNull;
 import us.crazycrew.crazycrates.api.enums.types.KeyType;
 
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class SelectCrate extends CrateBuilder {
      * @param crate the crate
      * @return the GUI title
      */
-    private static String getGuiTitle(final Crate crate) {
+    private static @NonNull String getGuiTitle(final @NonNull Crate crate) {
         final FileConfiguration file = crate.getFile();
         return file != null ?
                 MsgUtils.color(file.getString("Crate.SelectCrate.GUI.Title", "&6Select Your Prize!")) :
@@ -70,9 +71,10 @@ public class SelectCrate extends CrateBuilder {
         // Add decorative glass/panes from config (only where slot is empty)
         if (file != null && file.getBoolean("Crate.SelectCrate.Glass.Toggle", false)) {
             final String glassMaterial = file.getString("Crate.SelectCrate.Glass.Item", "GRAY_STAINED_GLASS_PANE");
+            final String glassName = MsgUtils.color(file.getString("Crate.SelectCrate.Glass.Name", ""));
             final List<Integer> glassSlots = file.getIntegerList("Crate.SelectCrate.Glass.Slots");
 
-            final ItemBuilder glassBuilder = new ItemBuilder().setMaterial(glassMaterial);
+            final ItemBuilder glassBuilder = new ItemBuilder().setMaterial(glassMaterial).setName(glassName);
             final ItemStack glassStack = glassBuilder.build();
 
             for (final Integer s : glassSlots) {
@@ -111,7 +113,7 @@ public class SelectCrate extends CrateBuilder {
      * @param file the crate configuration file
      * @return the confirm button ItemBuilder
      */
-    private ItemBuilder getConfirmButton(final FileConfiguration file) {
+    private @NonNull ItemBuilder getConfirmButton(final FileConfiguration file) {
         final ItemBuilder builder = new ItemBuilder();
 
         if (file != null && file.contains("Crate.SelectCrate.Confirm.Item")) {
@@ -143,7 +145,7 @@ public class SelectCrate extends CrateBuilder {
      * @param file the crate configuration file
      * @return the selection marker ItemBuilder
      */
-    public static ItemBuilder getSelectionMarker(final FileConfiguration file) {
+    public static @NonNull ItemBuilder getSelectionMarker(final FileConfiguration file) {
         final ItemBuilder builder = new ItemBuilder();
 
         if (file != null && file.contains("Crate.SelectCrate.SelectionMarker")) {
