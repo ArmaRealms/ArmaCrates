@@ -87,13 +87,11 @@ public class SelectCrateListener implements Listener {
 
         // Check if clicking in the top inventory
         if (event.getClickedInventory() != topInventory) {
-            this.plugin.debug(() -> "Clicked inventory is not the top inventory in SelectCrate.");
             return;
         }
 
         final ItemStack clickedItem = topInventory.getItem(slot);
         if (clickedItem == null || clickedItem.getType() == Material.AIR) {
-            this.plugin.debug(() -> "Clicked item is null or air in SelectCrate.");
             return;
         }
 
@@ -151,6 +149,7 @@ public class SelectCrateListener implements Listener {
         final ItemBuilder markerBuilder = SelectCrate.getSelectionMarker(crate.getFile());
         currentLore.add(markerBuilder.getName());
 
+        builder.setEnchantments(displayItem.getEnchantments());
         builder.setLore(currentLore);
 
         inventory.setItem(slot, builder.build());

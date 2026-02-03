@@ -749,7 +749,7 @@ public class ItemBuilder {
      * @param enchantment a list of enchantments to add to the item.
      * @return the ItemBuilder with a list of updated enchantments.
      */
-    public ItemBuilder setEnchantments(final HashMap<Enchantment, Integer> enchantment) {
+    public ItemBuilder setEnchantments(final Map<Enchantment, Integer> enchantment) {
         if (enchantment != null) {
             this.enchantments = enchantment;
         }

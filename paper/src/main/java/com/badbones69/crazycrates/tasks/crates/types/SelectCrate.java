@@ -67,9 +67,27 @@ public class SelectCrate extends CrateBuilder {
             slot++;
         }
 
+        // Add decorative glass/panes from config (only where slot is empty)
+        if (file != null && file.getBoolean("Crate.SelectCrate.Glass.Toggle", false)) {
+            final String glassMaterial = file.getString("Crate.SelectCrate.Glass.Item", "GRAY_STAINED_GLASS_PANE");
+            final List<Integer> glassSlots = file.getIntegerList("Crate.SelectCrate.Glass.Slots");
+
+            final ItemBuilder glassBuilder = new ItemBuilder().setMaterial(glassMaterial);
+            final ItemStack glassStack = glassBuilder.build();
+
+            for (final Integer s : glassSlots) {
+                if (s == null) continue;
+                final int idx = s;
+                if (idx < 0 || idx >= getSize()) continue;
+                final ItemStack existing = getInventory().getItem(idx);
+                if (existing == null || existing.getType() == Material.AIR) {
+                    setItem(idx, glassStack);
+                }
+            }
+        }
+
         // Add confirm button
-        final int confirmSlot = file != null ?
-                file.getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
+        final int confirmSlot = file != null ? file.getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
 
         final ItemBuilder confirmButton = getConfirmButton(file);
         setItem(confirmSlot, confirmButton.build());
