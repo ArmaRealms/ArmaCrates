@@ -150,13 +150,8 @@ public class SelectCrate extends CrateBuilder {
 
         if (file != null && file.contains("Crate.SelectCrate.SelectionMarker")) {
             final String material = file.getString("Crate.SelectCrate.SelectionMarker.Material", "NETHER_STAR");
-            final String name = file.getString("Crate.SelectCrate.SelectionMarker.Name", "&eSelecionado");
-            List<String> lore = file.getStringList("Crate.SelectCrate.SelectionMarker.Lore");
-
-            if (lore.isEmpty()) {
-                lore = new ArrayList<>();
-                lore.add("&7This prize is selected.");
-            }
+            final String name = file.getString("Crate.SelectCrate.SelectionMarker.Name", "&eSelected");
+            final List<String> lore = file.getStringList("Crate.SelectCrate.SelectionMarker.Lore");
 
             builder.setMaterial(material)
                     .setName(MsgUtils.color(name))

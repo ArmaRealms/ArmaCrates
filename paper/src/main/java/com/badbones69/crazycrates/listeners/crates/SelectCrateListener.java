@@ -137,22 +137,9 @@ public class SelectCrateListener implements Listener {
         // Set new selection
         session.setSelectedPrize(prize, slot);
 
-        // Add visual marker (add glow enchantment)
-        final ItemStack displayItem = prize.getDisplayItem(player);
-        final ItemBuilder builder = ItemBuilder.convertItemStack(displayItem);
-        builder.setGlow(true);
-
-        // Add selection marker in lore
-        final List<String> currentLore = new ArrayList<>(builder.getLore());
-        currentLore.add("");
-
+        // Add visual marker
         final ItemBuilder markerBuilder = SelectCrate.getSelectionMarker(crate.getFile());
-        currentLore.add(markerBuilder.getName());
-
-        builder.setEnchantments(displayItem.getEnchantments());
-        builder.setLore(currentLore);
-
-        inventory.setItem(slot, builder.build());
+        inventory.setItem(slot, markerBuilder.build());
 
         // Play a sound
         crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
@@ -273,12 +260,5 @@ public class SelectCrateListener implements Listener {
         this.crateManager.removePlayerFromOpeningList(player);
         this.crateManager.removePlayerKeyType(player);
         this.crateManager.removeHands(player);
-    }
-
-    /**
-     * Cleans up all sessions (called on plugin disable).
-     */
-    public void cleanupAllSessions() {
-        sessions.clear();
     }
 }
