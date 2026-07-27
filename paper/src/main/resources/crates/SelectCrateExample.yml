@@ -40,6 +40,23 @@ Crate:
         # Lore shown when hovering over the confirm button
         Lore:
           - '&7Click to receive the selected prize.'
+    # Pagination controls are displayed when the crate has more prizes than fit on one page.
+    # Keep these buttons beside Confirm and inside the reserved bottom row.
+    Navigation:
+      Previous:
+        Slot: 48
+        Item:
+          Material: ARROW
+          Name: '&ePrevious Page'
+          Lore:
+            - '&7Current page: %page% of %pages%'
+      Next:
+        Slot: 50
+        Item:
+          Material: ARROW
+          Name: '&aNext Page'
+          Lore:
+            - '&7Current page: %page% of %pages%'
     # Visual marker for selected prize
     SelectionMarker:
       # Name added to lore when item is selected

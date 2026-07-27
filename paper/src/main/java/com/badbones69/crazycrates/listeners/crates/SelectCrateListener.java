@@ -101,12 +101,28 @@ public class SelectCrateListener implements Listener {
 
         // Check if clicked the confirm button
         final int confirmSlot = crate.getFile() != null ?
-                crate.getFile().getInt("Crate.SelectCrate.Confirm.Slot", 49) : 49;
+                crate.getFile().getInt("Crate.SelectCrate.Confirm.Slot", SelectCrate.DEFAULT_CONFIRM_SLOT) :
+                SelectCrate.DEFAULT_CONFIRM_SLOT;
 
         if (slot == confirmSlot) {
             handleConfirmClick(player, session, view);
             this.plugin.debug(() -> "Player clicked the confirm button in SelectCrate.");
             return;
+        }
+
+        final int pageCount = SelectCrate.getPageCount(crate, topInventory.getSize());
+        if (pageCount > 1) {
+            final int previousSlot = crate.getFile() != null
+                    ? crate.getFile().getInt("Crate.SelectCrate.Navigation.Previous.Slot", SelectCrate.DEFAULT_PREVIOUS_PAGE_SLOT)
+                    : SelectCrate.DEFAULT_PREVIOUS_PAGE_SLOT;
+            final int nextSlot = crate.getFile() != null
+                    ? crate.getFile().getInt("Crate.SelectCrate.Navigation.Next.Slot", SelectCrate.DEFAULT_NEXT_PAGE_SLOT)
+                    : SelectCrate.DEFAULT_NEXT_PAGE_SLOT;
+
+            if (slot == previousSlot || slot == nextSlot) {
+                handleNavigationClick(player, session, topInventory, slot == nextSlot, pageCount);
+                return;
+            }
         }
 
         // Check if clicked on a prize
@@ -126,7 +142,7 @@ public class SelectCrateListener implements Listener {
     private void handlePrizeSelection(final Player player, final SelectCrateSession session, final Prize prize,
                                       final int slot, final Inventory inventory, final Crate crate) {
         // Clear previous selection marker if any
-        if (session.hasSelection()) {
+        if (session.hasSelection() && session.isSelectionOnCurrentPage()) {
             final int previousSlot = session.getSelectedSlot();
             final Prize previousPrize = session.getSelectedPrize();
             if (previousPrize != null) {
@@ -143,6 +159,28 @@ public class SelectCrateListener implements Listener {
 
         // Play a sound
         crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
+    }
+
+    /**
+     * Moves the session to an adjacent page and redraws its prizes and controls.
+     *
+     * @param player    player navigating the selection GUI
+     * @param session   active selection session
+     * @param inventory inventory to redraw
+     * @param next      whether to move forward instead of backward
+     * @param pageCount total number of available pages
+     */
+    private void handleNavigationClick(final Player player, final SelectCrateSession session,
+                                       final Inventory inventory, final boolean next, final int pageCount) {
+        final int offset = next ? 1 : -1;
+        final int destination = Math.clamp(session.getCurrentPage() + offset, 0, pageCount - 1);
+        if (destination == session.getCurrentPage()) {
+            return;
+        }
+
+        session.setCurrentPage(destination);
+        SelectCrate.renderPage(inventory, player, session.getCrate(), destination, session.getSelectedPrize());
+        session.getCrate().playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
     }
 
     /**

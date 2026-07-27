@@ -11,6 +11,8 @@ SelectCrate is a new crate type for CrazyCrates that allows players to **choose*
    - An enchantment glow effect
    - A special marker in the lore indicating it's selected
 
+   When the prizes occupy more than one page, the previous- and next-page buttons are displayed beside the confirmation button. The selection is preserved while navigating.
+
 3. **Confirming**: After selecting a prize, the player clicks the confirmation button (default: green concrete in slot 49).
 
 4. **Receiving the Prize**: Upon confirmation:
@@ -25,6 +27,7 @@ SelectCrate is a new crate type for CrazyCrates that allows players to **choose*
 - **Key Consumption**: Keys are only consumed when the player **confirms** their selection, not when opening the GUI
 - **Visual Feedback**: Selected items have a glow effect and special lore
 - **Configurable**: GUI size, button placement, messages, and marker appearance are all configurable
+- **Pagination**: All configured prizes remain accessible through previous- and next-page controls
 - **Safe**: Players can close the GUI without confirming to cancel the operation (no keys consumed)
 
 ## Configuration
@@ -49,6 +52,22 @@ Crate:
         Name: '&aConfirm Choice'
         Lore:
           - '&7Click to receive the selected prize.'
+
+    Navigation:
+      Previous:
+        Slot: 48
+        Item:
+          Material: ARROW
+          Name: '&ePrevious Page'
+          Lore:
+            - '&7Current page: %page% of %pages%'
+      Next:
+        Slot: 50
+        Item:
+          Material: ARROW
+          Name: '&aNext Page'
+          Lore:
+            - '&7Current page: %page% of %pages%'
     
     SelectionMarker:
       Material: NETHER_STAR
@@ -87,7 +106,7 @@ Prizes in SelectCrate work the same as other crate types, but MaxRange and Chanc
 
 ## Important Notes
 
-1. **GUI Size**: The GUI size must be large enough to display all your prizes plus the confirmation button. Reserve the bottom row (slots 45-53) for control buttons.
+1. **GUI Size**: Reserve the bottom row (slots 45-53 in a 54-slot GUI) for controls. Prizes that do not fit in the remaining slots are automatically split into pages.
 
 2. **Required Keys**: While you can set `RequiredKeys` to any value, SelectCrate will consume keys based on this setting when the player confirms.
 
