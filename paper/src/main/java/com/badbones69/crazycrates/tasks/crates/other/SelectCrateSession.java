@@ -18,6 +18,8 @@ public class SelectCrateSession {
     private final Crate crate;
     private Prize selectedPrize;
     private int selectedSlot;
+    private int currentPage;
+    private int selectedPage;
 
     /**
      * Creates a new SelectCrate session for a player.
@@ -30,6 +32,8 @@ public class SelectCrateSession {
         this.crate = crate;
         this.selectedPrize = null;
         this.selectedSlot = -1;
+        this.currentPage = 0;
+        this.selectedPage = -1;
     }
 
     /**
@@ -65,6 +69,7 @@ public class SelectCrateSession {
     public void setSelectedPrize(@Nullable Prize prize, int slot) {
         this.selectedPrize = prize;
         this.selectedSlot = slot;
+        this.selectedPage = this.currentPage;
     }
 
     /**
@@ -72,6 +77,29 @@ public class SelectCrateSession {
      */
     public int getSelectedSlot() {
         return this.selectedSlot;
+    }
+
+    /**
+     * @return zero-based page currently displayed to the player
+     */
+    public int getCurrentPage() {
+        return this.currentPage;
+    }
+
+    /**
+     * Changes the page currently displayed to the player.
+     *
+     * @param currentPage zero-based destination page
+     */
+    public void setCurrentPage(final int currentPage) {
+        this.currentPage = currentPage;
+    }
+
+    /**
+     * @return whether the selected prize is visible on the current page
+     */
+    public boolean isSelectionOnCurrentPage() {
+        return this.selectedPage == this.currentPage;
     }
 
     /**
@@ -87,5 +115,6 @@ public class SelectCrateSession {
     public void clearSelection() {
         this.selectedPrize = null;
         this.selectedSlot = -1;
+        this.selectedPage = -1;
     }
 }
