@@ -1,5 +1,5 @@
 plugins {
-    id("io.papermc.paperweight.userdev")
+    id("com.gradleup.shadow")
     id("xyz.jpenilla.run-paper")
     id("root-plugin")
 }
@@ -22,13 +22,14 @@ val mcVersion = providers.gradleProperty("mcVersion").get()
 project.version =
     if (System.getenv("BUILD_NUMBER") != null) "${rootProject.version}-${System.getenv("BUILD_NUMBER")}" else rootProject.version
 
-dependencies {
-    paperweight.paperDevBundle("$mcVersion-R0.1-SNAPSHOT")
-}
-
 tasks {
-    assemble {
-        dependsOn(reobfJar)
+    jar {
+        archiveClassifier.set("plain")
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+        exclude("META-INF/**")
     }
 
     runServer {
@@ -38,5 +39,4 @@ tasks {
 
         minecraftVersion(mcVersion)
     }
-
 }

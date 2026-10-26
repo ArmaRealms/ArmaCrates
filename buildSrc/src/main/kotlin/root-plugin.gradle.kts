@@ -1,5 +1,4 @@
 plugins {
-    id("com.gradleup.shadow")
     `java-library`
     `maven-publish`
 }
@@ -14,7 +13,7 @@ repositories {
 tasks {
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(21)
+        options.release.set(25)
     }
 
     javadoc {
@@ -24,13 +23,8 @@ tasks {
     processResources {
         filteringCharset = Charsets.UTF_8.name()
     }
-
-    shadowJar {
-        archiveClassifier.set("")
-        exclude("META-INF/**")
-    }
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of("21"))
+    toolchain.languageVersion.set(JavaLanguageVersion.of("25"))
 }

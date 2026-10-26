@@ -1,4 +1,5 @@
 plugins {
+    id("com.gradleup.shadow")
     id("root-plugin")
 }
 
@@ -13,4 +14,12 @@ project.version =
     if (System.getenv("BUILD_NUMBER") != null) "$fabricVersion-${System.getenv("BUILD_NUMBER")}" else fabricVersion
 
 tasks {
+    jar {
+        archiveClassifier.set("plain")
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+        exclude("META-INF/**")
+    }
 }

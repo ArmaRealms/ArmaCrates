@@ -1,11 +1,9 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import io.papermc.paperweight.tasks.RemapJar
-
 plugins {
     id("paper-plugin")
 }
 
 dependencies {
+    compileOnly("io.papermc.paper:paper-api:26.2.build.+")
     api(project(":common"))
     implementation(libs.cluster.paper)
     implementation(libs.triumphcmds)
@@ -24,17 +22,6 @@ tasks.shadowJar {
         "org.bstats"
     ).forEach { relocate(it, "libs.$it") }
 }
-
-tasks.named<RemapJar>("reobfJar") {
-    val shadow = tasks.named<ShadowJar>("shadowJar")
-    val jarTask = tasks.named<Jar>("jar")
-
-    dependsOn(jarTask, shadow)
-
-    inputJar.set(shadow.flatMap { it.archiveFile })
-}
-
-tasks.build { dependsOn(tasks.named("reobfJar")) }
 
 tasks {
     processResources {
