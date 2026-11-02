@@ -21,6 +21,8 @@
 
 ### Resolvido
 
+- A primeira construção de um item Oraxen/ItemEdit usa o item resolvido pela integração, evitando retornar o material de fallback na prévia ou entrega de prêmios.
+
 - A abertura do SelectCrate por caixa física, menu e comandos não exige um slot vazio; a confirmação continua validando se todos os itens cabem após o débito das chaves físicas.
 
 - Escolhas do SelectCrate que se tornam bloqueadas liberam o limite de seleção antes de novas escolhas ou navegação.

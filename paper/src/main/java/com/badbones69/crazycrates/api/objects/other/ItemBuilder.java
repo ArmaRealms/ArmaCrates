@@ -866,8 +866,8 @@ public class ItemBuilder {
     public ItemStack build() {
         if (this.nbtItem != null) this.itemStack = this.nbtItem.getItem();
 
-        ItemStack item = this.itemStack;
         setCustomItem();
+        ItemStack item = this.itemStack;
         if (item.getType() != Material.AIR) {
             if (this.isHead) { // Has to go 1st due to it removing all data when finished.
                 if (this.isHash) { // Sauce: https://github.com/deanveloper/SkullCreator
