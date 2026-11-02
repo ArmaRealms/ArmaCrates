@@ -5,6 +5,7 @@ import com.badbones69.crazycrates.api.objects.Prize;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -55,11 +56,22 @@ public class SelectCrateSession {
         return Collections.unmodifiableSet(new LinkedHashSet<>(this.selectedPrizes));
     }
 
-    /** Toggles a prize without allowing the current key limit to be exceeded. */
-    public boolean togglePrize(final Prize prize, final int limit) {
+    /** Sums key costs without overflowing an integer balance. Free openings allow one choice. */
+    public static long getSelectionCost(final Crate crate, final Collection<Prize> prizes, final boolean free) {
+        return free ? prizes.size() : prizes.stream().mapToLong(prize -> prize.getRequiredKeys(crate.getRequiredKeys())).sum();
+    }
+
+    public boolean togglePrize(final Prize prize, final int availableKeys) {
+        return togglePrize(prize, availableKeys, false);
+    }
+
+    /** Toggles a prize without allowing the total key cost to exceed the current balance. */
+    public boolean togglePrize(final Prize prize, final int availableKeys, final boolean free) {
         if (this.confirming) return false;
         if (this.selectedPrizes.remove(prize)) return true;
-        return this.selectedPrizes.size() < limit && this.selectedPrizes.add(prize);
+        final long cost = getSelectionCost(this.crate, this.selectedPrizes, free)
+                + (free ? 1 : prize.getRequiredKeys(this.crate.getRequiredKeys()));
+        return cost <= availableKeys && (!free || this.selectedPrizes.isEmpty()) && this.selectedPrizes.add(prize);
     }
 
     /** Invalidates queued confirmations as soon as Cancel is clicked. */

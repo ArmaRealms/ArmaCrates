@@ -8,6 +8,7 @@ import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
 import com.badbones69.crazycrates.api.utils.ItemUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateInventory;
+import com.badbones69.crazycrates.tasks.crates.other.SelectCrateSession;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -66,7 +67,7 @@ public class SelectCrate extends CrateBuilder {
         }
 
         renderPage(getInventory(), getPlayer(), getCrate(), 0, Set.of(),
-                getSelectionLimit(getPlayer(), getCrate(), type, checkHand));
+                getAvailableKeys(getPlayer(), getCrate(), type, checkHand), type == KeyType.free_key);
 
         // Store the key type and hand check for later use
         this.plugin.getCrateManager().addPlayerKeyType(getPlayer(), type);
@@ -81,8 +82,8 @@ public class SelectCrate extends CrateBuilder {
         // No animation for SelectCrate
     }
 
-    /** Returns the number of distinct prizes affordable with the opening key source. */
-    public static int getSelectionLimit(final Player player, final Crate crate, final KeyType type,
+    /** Returns the available key budget from the opening key source. */
+    public static int getAvailableKeys(final Player player, final Crate crate, final KeyType type,
                                         final boolean checkHand) {
         if (type == null) return 0;
         if (type == KeyType.free_key) return 1;
@@ -90,7 +91,7 @@ public class SelectCrate extends CrateBuilder {
                 ? CrazyCrates.get().getUserManager().getVirtualKeys(player.getUniqueId(), crate.getName())
                 : new SelectCrateInventory(player.getInventory()).countKeys(
                         item -> ItemUtils.isSimilar(item, crate), checkHand);
-        return Math.min(crate.getPrizes().size(), Math.max(0, keys) / Math.max(1, crate.getRequiredKeys()));
+        return Math.max(0, keys);
     }
 
     /**
@@ -133,10 +134,11 @@ public class SelectCrate extends CrateBuilder {
      * @param crate        crate whose prizes should be rendered
      * @param page         zero-based page index
      * @param selectedPrizes prizes selected by the player
-     * @param limit current number of affordable selections
+     * @param availableKeys current key balance
+     * @param free whether this opening allows one choice without charging keys
      */
     public static void renderPage(final @NonNull Inventory inventory, final @NonNull Player player,
-                                  final @NonNull Crate crate, final int page, final Set<Prize> selectedPrizes, final int limit) {
+                                  final @NonNull Crate crate, final int page, final Set<Prize> selectedPrizes, final int availableKeys, final boolean free) {
         final FileConfiguration file = crate.getFile();
         final int prizesPerPage = getPrizesPerPage(inventory.getSize());
         final int pageCount = getPageCount(crate, inventory.getSize());
@@ -144,6 +146,7 @@ public class SelectCrate extends CrateBuilder {
 
         inventory.clear();
 
+        final long selectedCost = SelectCrateSession.getSelectionCost(crate, selectedPrizes, free);
         final List<Prize> prizes = crate.getPrizes();
         final int firstPrize = safePage * prizesPerPage;
         final int lastPrize = Math.min(firstPrize + prizesPerPage, prizes.size());
@@ -158,22 +161,27 @@ public class SelectCrate extends CrateBuilder {
             final ItemStack item = selectedPrizes.contains(prize)
                     ? getSelectionMarker(file).build()
                     : prize.getDisplayItem(player);
-            if (!selectedPrizes.contains(prize) && selectedPrizes.size() >= limit) {
-                item.editMeta(meta -> {
-                    final List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add(message(crate, "Unavailable", "&cLimite atingido. Desmarque outro produto."));
-                    meta.setLore(lore);
-                });
-            }
+            final int prizeCost = free ? 1 : prize.getRequiredKeys(crate.getRequiredKeys());
+            item.editMeta(meta -> {
+                final List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                lore.add(message(crate, "PrizeCost", "&7Custo: %cost% chave(s).")
+                        .replace("%cost%", Integer.toString(free ? 0 : prizeCost)));
+                if (!selectedPrizes.contains(prize) && selectedCost + prizeCost > availableKeys) {
+                    lore.add(message(crate, "Unavailable", "&cSaldo insuficiente. Desmarque outro produto."));
+                }
+                meta.setLore(lore);
+            });
             inventory.setItem(slot, item);
         }
 
         addGlass(inventory, file);
 
         final int confirmSlot = getControlSlot(crate, inventory.getSize(), "Confirm");
-        final String counter = message(crate, "Counter", "&eSelecionados: %selected%/%limit%")
+        final String counter = message(crate, "Counter", "&eSelecionados: %selected% | Chaves: %cost%/%keys%")
                 .replace("%selected%", Integer.toString(selectedPrizes.size()))
-                .replace("%limit%", Integer.toString(limit));
+                .replace("%cost%", Long.toString(free ? 0 : selectedCost))
+                .replace("%keys%", Integer.toString(free ? 0 : availableKeys))
+                .replace("%limit%", Integer.toString(availableKeys));
         setItemIfValid(inventory, confirmSlot, getConfirmButton(file).addLore(counter).build());
         final int cancelSlot = getControlSlot(crate, inventory.getSize(), "Cancel");
         setItemIfValid(inventory, cancelSlot, new ItemBuilder().setMaterial(Material.BARRIER)

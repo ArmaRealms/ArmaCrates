@@ -6,15 +6,22 @@ import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 class SelectCrateSessionTest {
+    private Prize prize() {
+        final Prize prize = mock(Prize.class);
+        when(prize.getRequiredKeys(anyInt())).thenReturn(1);
+        return prize;
+    }
+
     @Test void fiveKeysAllowFiveDistinctSelectionsAndDeselectingReleasesOne() {
         final SelectCrateSession session = new SelectCrateSession(mock(Player.class), mock(Crate.class));
-        final Prize first = mock(Prize.class);
+        final Prize first = prize();
         assertTrue(session.togglePrize(first, 5));
-        for (int i = 0; i < 4; i++) assertTrue(session.togglePrize(mock(Prize.class), 5));
-        final Prize sixth = mock(Prize.class);
+        for (int i = 0; i < 4; i++) assertTrue(session.togglePrize(prize(), 5));
+        final Prize sixth = prize();
         assertFalse(session.togglePrize(sixth, 5));
         assertEquals(5, session.getSelectedPrizes().size());
         assertTrue(session.togglePrize(first, 5));
@@ -26,7 +33,7 @@ class SelectCrateSessionTest {
     @Test void confirmationIsSingleUseAndLocksSelection() {
         final SelectCrateSession session = new SelectCrateSession(mock(Player.class), mock(Crate.class));
         assertFalse(session.beginConfirmation());
-        final Prize prize = mock(Prize.class);
+        final Prize prize = prize();
         assertTrue(session.togglePrize(prize, 1));
         assertTrue(session.beginConfirmation());
         assertFalse(session.beginConfirmation());
@@ -36,10 +43,38 @@ class SelectCrateSessionTest {
 
     @Test void reducedBalanceStillAllowsDeselectingAndPreventsAdding() {
         final SelectCrateSession session = new SelectCrateSession(mock(Player.class), mock(Crate.class));
-        final Prize prize = mock(Prize.class);
+        final Prize prize = prize();
         assertTrue(session.togglePrize(prize, 5));
-        assertFalse(session.togglePrize(mock(Prize.class), 0));
+        assertFalse(session.togglePrize(prize(), 0));
         assertTrue(session.togglePrize(prize, 0));
         assertFalse(session.hasSelection());
     }
+    @Test void mixedPricesRespectBudgetAndDeselectingRestoresIt() {
+        final Crate crate = mock(Crate.class);
+        final SelectCrateSession session = new SelectCrateSession(mock(Player.class), crate);
+        final Prize expensive = prize();
+        final Prize cheap = prize();
+        when(expensive.getRequiredKeys(anyInt())).thenReturn(2);
+        assertTrue(session.togglePrize(expensive, 2));
+        assertFalse(session.togglePrize(cheap, 2));
+        assertTrue(session.togglePrize(expensive, 2));
+        assertTrue(session.togglePrize(cheap, 2));
+        assertEquals(1, SelectCrateSession.getSelectionCost(crate, session.getSelectedPrizes(), false));
+    }
+
+    @Test void aggregateCostDoesNotOverflowAndFreeOpeningsStillAllowOnlyOneChoice() {
+        final Crate crate = mock(Crate.class);
+        final SelectCrateSession session = new SelectCrateSession(mock(Player.class), crate);
+        final Prize first = prize();
+        final Prize second = prize();
+        when(first.getRequiredKeys(anyInt())).thenReturn(Integer.MAX_VALUE);
+        when(second.getRequiredKeys(anyInt())).thenReturn(Integer.MAX_VALUE);
+        assertEquals(4294967294L, SelectCrateSession.getSelectionCost(crate, java.util.List.of(first, second), false));
+        assertTrue(session.togglePrize(first, Integer.MAX_VALUE));
+        assertFalse(session.togglePrize(second, Integer.MAX_VALUE));
+        assertTrue(session.togglePrize(first, 0));
+        assertTrue(session.togglePrize(first, 1, true));
+        assertFalse(session.togglePrize(second, 1, true));
+    }
+
 }

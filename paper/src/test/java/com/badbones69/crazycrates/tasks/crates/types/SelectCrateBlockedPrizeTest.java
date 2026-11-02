@@ -7,6 +7,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -27,7 +29,7 @@ class SelectCrateBlockedPrizeTest {
         when(inventory.getSize()).thenReturn(54);
         try (var builders = mockConstruction(ItemBuilder.class, withSettings().defaultAnswer(RETURNS_SELF),
                 (builder, context) -> when(builder.build()).thenReturn(icon))) {
-            SelectCrate.renderPage(inventory, player, crate, 0, Set.of(prize), 1);
+            SelectCrate.renderPage(inventory, player, crate, 0, Set.of(prize), 1, false);
             final ItemBuilder blocked = builders.constructed().getFirst();
             verify(blocked).setMaterial("STRUCTURE_VOID");
             verify(inventory).setItem(0, icon);
@@ -48,4 +50,29 @@ class SelectCrateBlockedPrizeTest {
             verify(blocked).setLore(List.of("Already claimed"));
         }
     }
+    @Test void displayUsesRemainingKeyBudgetAndShowsIndividualCostAndTotal() {
+        final Crate crate = mock(Crate.class);
+        final Prize selected = mock(Prize.class);
+        final Prize expensive = mock(Prize.class);
+        final Player player = mock(Player.class);
+        final Inventory inventory = mock(Inventory.class);
+        final ItemStack display = mock(ItemStack.class);
+        final ItemMeta meta = mock(ItemMeta.class);
+        final ItemStack icon = mock(ItemStack.class);
+        when(crate.getPrizes()).thenReturn(List.of(selected, expensive));
+        when(selected.getRequiredKeys(anyInt())).thenReturn(1);
+        when(expensive.getRequiredKeys(anyInt())).thenReturn(2);
+        when(expensive.getDisplayItem(player)).thenReturn(display);
+        when(inventory.getSize()).thenReturn(54);
+        doAnswer(call -> { ((Consumer<ItemMeta>) call.getArgument(0)).accept(meta); return true; })
+                .when(display).editMeta(any(Consumer.class));
+        try (var builders = mockConstruction(ItemBuilder.class, withSettings().defaultAnswer(RETURNS_SELF),
+                (builder, context) -> when(builder.build()).thenReturn(icon))) {
+            SelectCrate.renderPage(inventory, player, crate, 0, Set.of(selected), 2, false);
+            verify(meta).setLore(argThat(lore -> lore.stream().anyMatch(line -> line.contains("Custo: 2"))
+                    && lore.stream().anyMatch(line -> line.contains("Saldo insuficiente"))));
+            verify(builders.constructed().get(1)).addLore(contains("Chaves: 1/2"));
+        }
+    }
+
 }

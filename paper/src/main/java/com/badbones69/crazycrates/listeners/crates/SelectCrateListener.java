@@ -160,12 +160,12 @@ public class SelectCrateListener implements Listener {
         final int index = session.getCurrentPage() * SelectCrate.getPrizesPerPage(topInventory.getSize()) + slot;
         if (slot >= SelectCrate.getPrizesPerPage(topInventory.getSize()) || index >= crate.getPrizes().size()) return;
         final Prize prize = crate.getPrizes().get(index);
-        final int limit = selectionLimit(player, crate);
+        final int balance = availableKeys(player, crate);
         if (prize.hasPermission(player)) {
             session.togglePrize(prize, 0);
             player.sendMessage(SelectCrate.message(crate, "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
-        } else if (!session.togglePrize(prize, limit)) {
-            player.sendMessage(SelectCrate.message(crate, "SelectionLimit", "&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro."));
+        } else if (!session.togglePrize(prize, balance, this.crateManager.getPlayerKeyType(player) == KeyType.free_key)) {
+            player.sendMessage(SelectCrate.message(crate, "SelectionLimit", "&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto."));
         }
         render(player, session, topInventory);
         crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
@@ -177,14 +177,15 @@ public class SelectCrateListener implements Listener {
                 && this.crateManager.getCrateFromName(crate.getName()) == crate;
     }
 
-    private int selectionLimit(final Player player, final Crate crate) {
-        return SelectCrate.getSelectionLimit(player, crate, this.crateManager.getPlayerKeyType(player),
+    private int availableKeys(final Player player, final Crate crate) {
+        return SelectCrate.getAvailableKeys(player, crate, this.crateManager.getPlayerKeyType(player),
                 this.crateManager.getHand(player));
     }
 
     private void render(final Player player, final SelectCrateSession session, final Inventory inventory) {
         SelectCrate.renderPage(inventory, player, session.getCrate(), session.getCurrentPage(),
-                session.getSelectedPrizes(), selectionLimit(player, session.getCrate()));
+                session.getSelectedPrizes(), availableKeys(player, session.getCrate()),
+                this.crateManager.getPlayerKeyType(player) == KeyType.free_key);
     }
 
     /**
@@ -232,7 +233,7 @@ public class SelectCrateListener implements Listener {
             closeSession(player);
             return;
         }
-        if (selected.size() > selectionLimit(player, crate)) {
+        if (SelectCrateSession.getSelectionCost(crate, selected, type == KeyType.free_key) > availableKeys(player, crate)) {
             player.sendMessage(Messages.no_keys.getMessage(player));
             render(player, session, view.getTopInventory());
             return;
@@ -244,7 +245,7 @@ public class SelectCrateListener implements Listener {
 
         final List<ItemStack> items = new ArrayList<>();
         final SelectCrateInventory candidate;
-        final int cost = Math.multiplyExact(selected.size(), Math.max(1, crate.getRequiredKeys()));
+        final int cost;
         try {
             for (final Prize prize : selected) {
                 for (final ItemStack item : prize.getItems()) {
@@ -266,10 +267,11 @@ public class SelectCrateListener implements Listener {
                 return;
             }
             if (rejectBlockedSelection(player, session, view.getTopInventory())) return;
-            if (selected.size() > selectionLimit(player, crate)) {
+            if (SelectCrateSession.getSelectionCost(crate, selected, type == KeyType.free_key) > availableKeys(player, crate)) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
                 return;
             }
+            cost = type == KeyType.free_key ? 0 : Math.toIntExact(SelectCrateSession.getSelectionCost(crate, selected, false));
             // Item builders and permission checks may call integrations; capture inventory afterwards.
             candidate = new SelectCrateInventory(player.getInventory());
             if (type == KeyType.physical_key && !candidate.takeKeys(cost,

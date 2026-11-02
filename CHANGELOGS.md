@@ -4,6 +4,8 @@
 
 ### Adicionado
 
+- SelectCrate aceita `RequiredKeys` por prêmio, com prioridade sobre o custo global e cobrança da soma das escolhas. A interface mostra os custos individuais e o orçamento total.
+
 - SelectCrate bloqueia prêmios conforme `BlackListed-Permissions`, com ícone configurável em `SelectCrate.BlockedPrize` (`STRUCTURE_VOID` por padrão) e revalidação antes da entrega.
 
 - Seleção múltipla de prêmios no SelectCrate conforme o saldo de chaves e o custo por prêmio, com contador, desmarcação entre páginas e botão de cancelamento.
