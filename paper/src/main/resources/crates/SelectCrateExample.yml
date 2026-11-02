@@ -30,7 +30,7 @@ Crate:
       Title: '&6Select Your Prize!'
     # Confirm button settings
     Confirm:
-      # Slot where the confirm button appears (default: 49, bottom-right of 6-row GUI)
+      # Control slots must be distinct and inside the reserved bottom row.
       Slot: 49
       Item:
         # Material of the confirm button
@@ -39,7 +39,10 @@ Crate:
         Name: '&aConfirm Choice'
         # Lore shown when hovering over the confirm button
         Lore:
-          - '&7Click to receive the selected prize.'
+          - '&7Click to receive all selected prizes.'
+    # Closing the menu also cancels without consuming keys.
+    Cancel:
+      Slot: 53
     # Pagination controls are displayed when the crate has more prizes than fit on one page.
     # Keep these buttons beside Confirm and inside the reserved bottom row.
     Navigation:
@@ -57,14 +60,20 @@ Crate:
           Name: '&aNext Page'
           Lore:
             - '&7Current page: %page% of %pages%'
-    # Visual marker for selected prize
+    # Visual marker for selected prizes. Click again to deselect.
     SelectionMarker:
       # Name added to lore when item is selected
       Name: '&e&l✓ SELECTED'
     # Custom messages
     Messages:
       # Message shown when player tries to confirm without selecting a prize
-      NoSelection: '&cPlease select a prize before confirming!'
+      NoSelection: '&cSelecione ao menos um produto antes de confirmar!'
+      Counter: '&eSelecionados: %selected%/%limit%'
+      Cancel: '&cCancelar'
+      SelectionLimit: '&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro.'
+      Unavailable: '&cLimite atingido. Desmarque outro produto.'
+      InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
+      InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'
   # Item the crate is in the GUI
   Item: 'ENDER_CHEST'
   # If the crate in the main /cc GUI is glowing or not.
@@ -113,7 +122,9 @@ Crate:
       - '&6&lSelect Crate'
       - '&eChoose your prize!'
   # All the prizes that can be won from the Crate.
-  # In SelectCrate, all prizes are displayed and the player chooses one.
+  # Choose distinct prizes up to floor(keys / RequiredKeys), across all pages.
+  # Prefer Items (including or: custom items) for validated inventory delivery.
+  # Commands run after delivery and cannot be checked for space or rolled back.
   Prizes:
     1:
       DisplayName: '&e&lDiamond Sword'

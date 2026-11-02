@@ -69,6 +69,11 @@ public class PrizeManager {
             }
         }
 
+        finishPrize(player, prize, crate);
+    }
+
+    /** Runs reward commands and messages after a prepared item delivery has committed. */
+    public static void finishPrize(final Player player, final Prize prize, final Crate crate) {
         for (String command : prize.getCommands()) { // /give %player% iron %random%:1-64
             if (command.contains("%random%:")) {
                 final String cmd = command;

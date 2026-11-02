@@ -4,12 +4,15 @@ import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.api.PrizeManager;
 import com.badbones69.crazycrates.api.builders.types.CratePrizeMenu;
 import com.badbones69.crazycrates.api.enums.Messages;
+import com.badbones69.crazycrates.api.events.PlayerPrizeEvent;
 import com.badbones69.crazycrates.api.objects.Crate;
 import com.badbones69.crazycrates.api.objects.Prize;
 import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
+import com.badbones69.crazycrates.api.utils.ItemUtils;
 import com.badbones69.crazycrates.api.utils.MiscUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import com.badbones69.crazycrates.tasks.crates.CrateManager;
+import com.badbones69.crazycrates.tasks.crates.other.SelectCrateInventory;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateSession;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
 import org.bukkit.Material;
@@ -34,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Handles inventory interactions for the SelectCrate type.
@@ -99,25 +103,33 @@ public class SelectCrateListener implements Listener {
         final SelectCrateSession session = sessions.computeIfAbsent(player.getUniqueId(),
                 k -> new SelectCrateSession(player, crate));
 
+        final int cancelSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Cancel");
+        if (slot == cancelSlot) {
+            session.cancel();
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+                if (sessions.get(player.getUniqueId()) == session) closeSession(player);
+            });
+            return;
+        }
+
         // Check if clicked the confirm button
-        final int confirmSlot = crate.getFile() != null ?
-                crate.getFile().getInt("Crate.SelectCrate.Confirm.Slot", SelectCrate.DEFAULT_CONFIRM_SLOT) :
-                SelectCrate.DEFAULT_CONFIRM_SLOT;
+        final int confirmSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Confirm");
 
         if (slot == confirmSlot) {
-            handleConfirmClick(player, session, view);
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+                if (sessions.get(player.getUniqueId()) == session
+                        && player.getOpenInventory().getTopInventory() == topInventory) {
+                    handleConfirmClick(player, session, view);
+                }
+            });
             this.plugin.debug(() -> "Player clicked the confirm button in SelectCrate.");
             return;
         }
 
         final int pageCount = SelectCrate.getPageCount(crate, topInventory.getSize());
         if (pageCount > 1) {
-            final int previousSlot = crate.getFile() != null
-                    ? crate.getFile().getInt("Crate.SelectCrate.Navigation.Previous.Slot", SelectCrate.DEFAULT_PREVIOUS_PAGE_SLOT)
-                    : SelectCrate.DEFAULT_PREVIOUS_PAGE_SLOT;
-            final int nextSlot = crate.getFile() != null
-                    ? crate.getFile().getInt("Crate.SelectCrate.Navigation.Next.Slot", SelectCrate.DEFAULT_NEXT_PAGE_SLOT)
-                    : SelectCrate.DEFAULT_NEXT_PAGE_SLOT;
+            final int previousSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Navigation.Previous");
+            final int nextSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Navigation.Next");
 
             if (slot == previousSlot || slot == nextSlot) {
                 handleNavigationClick(player, session, topInventory, slot == nextSlot, pageCount);
@@ -125,40 +137,26 @@ public class SelectCrateListener implements Listener {
             }
         }
 
-        // Check if clicked on a prize
-        final Prize prize = crate.getPrize(clickedItem);
-        if (prize == null) {
-            this.plugin.debug(() -> "Clicked item is not a valid prize in SelectCrate.");
-            return;
+        // Resolve by page and slot; display items and selection markers are not identities.
+        final int index = session.getCurrentPage() * SelectCrate.getPrizesPerPage(topInventory.getSize()) + slot;
+        if (slot >= SelectCrate.getPrizesPerPage(topInventory.getSize()) || index >= crate.getPrizes().size()) return;
+        final Prize prize = crate.getPrizes().get(index);
+        final int limit = selectionLimit(player, crate);
+        if (!session.togglePrize(prize, limit)) {
+            player.sendMessage(SelectCrate.message(crate, "SelectionLimit", "&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro."));
         }
-
-        // Handle prize selection
-        handlePrizeSelection(player, session, prize, slot, topInventory, crate);
+        render(player, session, topInventory);
+        crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
     }
 
-    /**
-     * Handles prize selection by the player.
-     */
-    private void handlePrizeSelection(final Player player, final SelectCrateSession session, final Prize prize,
-                                      final int slot, final Inventory inventory, final Crate crate) {
-        // Clear previous selection marker if any
-        if (session.hasSelection() && session.isSelectionOnCurrentPage()) {
-            final int previousSlot = session.getSelectedSlot();
-            final Prize previousPrize = session.getSelectedPrize();
-            if (previousPrize != null) {
-                inventory.setItem(previousSlot, previousPrize.getDisplayItem(player));
-            }
-        }
+    private int selectionLimit(final Player player, final Crate crate) {
+        return SelectCrate.getSelectionLimit(player, crate, this.crateManager.getPlayerKeyType(player),
+                this.crateManager.getHand(player));
+    }
 
-        // Set new selection
-        session.setSelectedPrize(prize, slot);
-
-        // Add visual marker
-        final ItemBuilder markerBuilder = SelectCrate.getSelectionMarker(crate.getFile());
-        inventory.setItem(slot, markerBuilder.build());
-
-        // Play a sound
-        crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
+    private void render(final Player player, final SelectCrateSession session, final Inventory inventory) {
+        SelectCrate.renderPage(inventory, player, session.getCrate(), session.getCurrentPage(),
+                session.getSelectedPrizes(), selectionLimit(player, session.getCrate()));
     }
 
     /**
@@ -179,7 +177,7 @@ public class SelectCrateListener implements Listener {
         }
 
         session.setCurrentPage(destination);
-        SelectCrate.renderPage(inventory, player, session.getCrate(), destination, session.getSelectedPrize());
+        render(player, session, inventory);
         session.getCrate().playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
     }
 
@@ -198,47 +196,105 @@ public class SelectCrateListener implements Listener {
             return;
         }
 
-        final UUID uuid = player.getUniqueId();
-        final String crateName = crate.getName();
+        final List<Prize> selected = List.copyOf(session.getSelectedPrizes());
         final KeyType type = this.crateManager.getPlayerKeyType(player);
-
-        // Validate player still has keys (only for physical keys)
-        if (type == KeyType.physical_key) {
-            final boolean hasPhysicalKey = this.plugin.getUserManager().hasPhysicalKey(uuid, crateName, this.crateManager.getHand(player));
-
-            if (!hasPhysicalKey) {
-                player.sendMessage(Messages.no_keys.getMessage(player));
-                cleanupSession(player);
-                player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
-                return;
-            }
+        if (type == null) {
+            closeSession(player);
+            return;
         }
-
-        // Take the key - takeKeys returns true on success, false on failure
-        final boolean failedToTakeKeys = this.crateManager.hasPlayerKeyType(player) &&
-                !this.plugin.getUserManager().takeKeys(
-                        crate.getRequiredKeys() > 0 ? crate.getRequiredKeys() : 1,
-                        uuid,
-                        crateName,
-                        type,
-                        this.crateManager.getHand(player)
-                );
-
-        if (failedToTakeKeys) {
-            MiscUtils.failedToTakeKey(player, crate);
-            cleanupSession(player);
-            player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
+        if (selected.size() > selectionLimit(player, crate)) {
+            player.sendMessage(Messages.no_keys.getMessage(player));
+            render(player, session, view.getTopInventory());
+            return;
+        }
+        if (this.crateManager.getCrateFromName(crate.getName()) != crate
+                || !crate.getPrizes().containsAll(selected)) {
+            closeSession(player);
             return;
         }
 
-        // Give the selected prize
-        final Prize selectedPrize = session.getSelectedPrize();
-        PrizeManager.givePrizeAndCallEvent(player, crate, selectedPrize);
+        final List<Prize> resolved = new ArrayList<>();
+        final List<ItemStack> items = new ArrayList<>();
+        final SelectCrateInventory candidate;
+        final int cost = Math.multiplyExact(selected.size(), Math.max(1, crate.getRequiredKeys()));
+        try {
+            for (final Prize prize : selected) {
+                final Prize reward = prize.hasPermission(player) ? prize.getAlternativePrize() : prize;
+                if (reward == null) throw new IllegalArgumentException("Missing alternative prize");
+                resolved.add(reward);
+                for (final ItemStack item : reward.getItems()) {
+                    if (item == null) throw new IllegalArgumentException("Missing reward item");
+                    items.add(item.clone());
+                }
+                for (final ItemBuilder builder : reward.getItemBuilders()) {
+                    items.add(new ItemBuilder(builder).setTarget(player).build());
+                }
+            }
+            // Item builders may call integrations; capture and validate inventory afterwards.
+            candidate = new SelectCrateInventory(player.getInventory());
+            if (selected.size() > selectionLimit(player, crate)
+                    || this.crateManager.getCrateFromName(crate.getName()) != crate
+                    || !crate.getPrizes().containsAll(selected)) {
+                player.sendMessage(Messages.no_keys.getMessage(player));
+                return;
+            }
+            if (type == KeyType.physical_key && !candidate.takeKeys(cost,
+                    item -> ItemUtils.isSimilar(item, crate), this.crateManager.getHand(player))) {
+                player.sendMessage(Messages.no_keys.getMessage(player));
+                return;
+            }
+            if (!candidate.addItems(items)) {
+                player.sendMessage(SelectCrate.message(crate, "InventoryFull",
+                        "&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados."));
+                return;
+            }
+        } catch (final RuntimeException exception) {
+            this.plugin.getLogger().log(Level.SEVERE,
+                    "Cannot prepare SelectCrate rewards for " + crate.getName(), exception);
+            player.sendMessage(SelectCrate.message(crate, "InvalidReward", "&cNão foi possível preparar os produtos. Avise a equipe."));
+            return;
+        }
 
-        // Play sound
+        if (!session.beginConfirmation()) return;
+        final SelectCrateInventory original = new SelectCrateInventory(player.getInventory());
+        final int originalKeys = this.plugin.getUserManager().getVirtualKeys(player.getUniqueId(), crate.getName());
+        // No external callbacks occur between the final validation, key debit and item commit.
+        try {
+            if (type == KeyType.virtual_key && !this.plugin.getUserManager().takeKeys(cost,
+                    player.getUniqueId(), crate.getName(), type, false)) {
+                MiscUtils.failedToTakeKey(player, crate);
+                return;
+            }
+            candidate.apply(player.getInventory());
+        } catch (final RuntimeException exception) {
+            this.plugin.getLogger().log(Level.SEVERE,
+                    "SelectCrate item commit failed: " + crate.getName(), exception);
+            original.apply(player.getInventory());
+            if (type == KeyType.virtual_key) {
+                this.plugin.getUserManager().setKeys(originalKeys, player.getUniqueId(), crate.getName());
+            }
+            return;
+        } finally {
+            closeSession(player);
+        }
+
+        // shortcut: external commands cannot be rolled back; use Items for inventory-safe delivery.
+        int rewardIndex = 0;
+        for (final Prize prize : selected) {
+            final Prize reward = resolved.get(rewardIndex++);
+            try {
+                PrizeManager.finishPrize(player, reward, crate);
+                if (prize.useFireworks()) MiscUtils.spawnFirework(player.getLocation().add(0, 1, 0), null);
+                this.plugin.getServer().getPluginManager().callEvent(new PlayerPrizeEvent(player, crate, crate.getName(), prize));
+            } catch (final RuntimeException exception) {
+                this.plugin.getLogger().log(Level.SEVERE,
+                        "SelectCrate reward callback failed after item delivery: " + crate.getName(), exception);
+            }
+        }
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
+    }
 
-        // Cleanup and close
+    private void closeSession(final Player player) {
         cleanupSession(player);
         player.closeInventory(InventoryCloseEvent.Reason.PLUGIN);
     }
@@ -253,10 +309,7 @@ public class SelectCrateListener implements Listener {
         final Crate crate = this.crateManager.getOpeningCrate(player);
         if (crate == null || crate.getCrateType() != CrateType.select_crate) return;
 
-        // Only cleanup if not closing due to plugin (which means it was a manual close)
-        if (event.getReason() != InventoryCloseEvent.Reason.PLUGIN) {
-            cleanupSession(player);
-        }
+        if (event.getInventory().getHolder(false) instanceof CratePrizeMenu) cleanupSession(player);
     }
 
     /**
