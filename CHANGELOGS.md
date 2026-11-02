@@ -13,6 +13,11 @@
 - Controles do SelectCrate permanecem em slots distintos fora da área de prêmios, inclusive em menus menores.
 - Comandos de recompensa são mantidos após a entrega de itens; os efeitos de plugins externos não oferecem validação de espaço nem reversão.
 
+### Resolvido
+
+- Confirmação do SelectCrate rejeita permissões de abertura revogadas e menus cujos prêmios foram alterados ou reordenados.
+- Falhas em comandos ou fogos não impedem o evento de recebimento de itens já entregues no SelectCrate.
+
 ## 2.0.0
 
 ### Mudanças incompatíveis

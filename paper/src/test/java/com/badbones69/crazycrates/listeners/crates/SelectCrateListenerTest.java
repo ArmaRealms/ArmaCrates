@@ -14,6 +14,7 @@ import com.badbones69.crazycrates.tasks.BukkitUserManager;
 import com.badbones69.crazycrates.tasks.crates.CrateManager;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
 import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -74,6 +75,7 @@ class SelectCrateListenerTest {
         when(plugin.getUserManager()).thenReturn(users);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_keys)).thenReturn("No keys");
+        when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_crate_permission)).thenReturn("No permission");
         when(plugin.getCrazyHandler().getConfigManager().getConfig().getProperty(ConfigKeys.command_prefix)).thenReturn("");
         select = mockStatic(SelectCrate.class, CALLS_REAL_METHODS);
         select.when(() -> SelectCrate.renderPage(any(), any(), any(), anyInt(), anySet(), anyInt())).thenAnswer(call -> null);
@@ -84,13 +86,13 @@ class SelectCrateListenerTest {
         itemUtils.when(() -> ItemUtils.isSimilar(any(), same(crate))).thenAnswer(call -> call.getArgument(0) == key);
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(player.getInventory()).thenReturn(inventory);
+        when(player.hasPermission(anyString())).thenReturn(true);
         when(player.getOpenInventory()).thenReturn(view);
         when(inventory.getStorageContents()).thenReturn(new ItemStack[36]);
         final ItemStack offhand = item();
         when(inventory.getItemInOffHand()).thenReturn(offhand);
         when(inventory.getMaxStackSize()).thenReturn(64);
         when(view.getTopInventory()).thenReturn(top);
-        when(top.getHolder(false)).thenReturn(mock(CratePrizeMenu.class));
         when(top.getSize()).thenReturn(54);
         when(top.getItem(anyInt())).thenAnswer(call -> item());
         when(crate.getCrateType()).thenReturn(CrateType.select_crate);
@@ -103,6 +105,8 @@ class SelectCrateListenerTest {
             prizes.add(prize);
         }
         when(crate.getPrizes()).thenReturn(prizes);
+        final CratePrizeMenu holder = new CratePrizeMenu(crate, player, 54, "select");
+        when(top.getHolder(false)).thenReturn(holder);
         when(manager.getOpeningCrate(player)).thenReturn(crate);
         when(manager.getCrateFromName("select")).thenReturn(crate);
         when(manager.isInOpeningList(player)).thenReturn(true);
@@ -299,6 +303,63 @@ class SelectCrateListenerTest {
         tick();
         verify(users).takeKeys(2, player.getUniqueId(), "select", KeyType.virtual_key, false);
         delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+    }
+
+    @Test void revokedCratePermissionCannotRedeemQueuedSelection() {
+        click(0);
+        click(49);
+        when(player.hasPermission("crazycrates.open.select")).thenReturn(false);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void prizeChangesBeforeFirstClickInvalidateDisplayedMenu() {
+        java.util.Collections.swap(prizes, 0, 1);
+        click(0);
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void deliveredItemsStillFirePrizeEventWhenExternalCommandsThrow() {
+        click(0);
+        click(1);
+        delivery.when(() -> PrizeManager.finishPrize(player, prizes.get(0), crate))
+                .thenThrow(new IllegalStateException("external command failed"));
+        click(49);
+        tick();
+        final var events = ArgumentCaptor.forClass(PlayerPrizeEvent.class);
+        verify(plugin.getServer().getPluginManager(), times(2)).callEvent(events.capture());
+        assertEquals(List.of(prizes.get(0), prizes.get(1)),
+                events.getAllValues().stream().map(PlayerPrizeEvent::getPrize).toList());
+    }
+
+    @Test void prizeChangeAfterConfirmationClickInvalidatesQueuedRedemption() {
+        click(0);
+        click(49);
+        java.util.Collections.swap(prizes, 0, 1);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void failedFireworksStillFirePrizeEventForDeliveredItems() {
+        when(prizes.get(0).useFireworks()).thenReturn(true);
+        final Location location = mock(Location.class);
+        when(player.getLocation()).thenReturn(location);
+        when(location.add(0, 1, 0)).thenThrow(new IllegalStateException("firework location unavailable"));
+        click(0);
+        click(49);
+        tick();
+        final var event = ArgumentCaptor.forClass(PlayerPrizeEvent.class);
+        verify(plugin.getServer().getPluginManager()).callEvent(event.capture());
+        assertSame(prizes.get(0), event.getValue().getPrize());
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
     }
 
 }

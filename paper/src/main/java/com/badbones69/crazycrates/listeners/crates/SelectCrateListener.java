@@ -35,6 +35,7 @@ import us.crazycrew.crazycrates.api.enums.types.KeyType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -83,6 +84,15 @@ public class SelectCrateListener implements Listener {
 
         // Cancel the event to prevent item movement
         event.setCancelled(true);
+
+        if (!isCurrentMenu(crate, inventory)) {
+            final SelectCrateSession session = sessions.get(player.getUniqueId());
+            if (session != null) session.cancel();
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+                if (player.getOpenInventory().getTopInventory() == inventory) closeSession(player);
+            });
+            return;
+        }
 
         // Get the raw slot clicked
         final int slot = event.getRawSlot();
@@ -149,6 +159,12 @@ public class SelectCrateListener implements Listener {
         crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
     }
 
+    private boolean isCurrentMenu(final Crate crate, final Inventory inventory) {
+        return inventory.getHolder(false) instanceof CratePrizeMenu holder
+                && holder.getCrate() == crate && holder.hasCurrentPrizes()
+                && this.crateManager.getCrateFromName(crate.getName()) == crate;
+    }
+
     private int selectionLimit(final Player player, final Crate crate) {
         return SelectCrate.getSelectionLimit(player, crate, this.crateManager.getPlayerKeyType(player),
                 this.crateManager.getHand(player));
@@ -207,8 +223,7 @@ public class SelectCrateListener implements Listener {
             render(player, session, view.getTopInventory());
             return;
         }
-        if (this.crateManager.getCrateFromName(crate.getName()) != crate
-                || !crate.getPrizes().containsAll(selected)) {
+        if (!isCurrentMenu(crate, view.getTopInventory()) || !crate.getPrizes().containsAll(selected)) {
             closeSession(player);
             return;
         }
@@ -232,9 +247,17 @@ public class SelectCrateListener implements Listener {
             }
             // Item builders may call integrations; capture and validate inventory afterwards.
             candidate = new SelectCrateInventory(player.getInventory());
-            if (selected.size() > selectionLimit(player, crate)
-                    || this.crateManager.getCrateFromName(crate.getName()) != crate
-                    || !crate.getPrizes().containsAll(selected)) {
+            if (!player.hasPermission("crazycrates.open." + crate.getName())
+                    || !player.hasPermission("crazycrates.open." + crate.getName().toLowerCase(Locale.ROOT))) {
+                player.sendMessage(Messages.no_crate_permission.getMessage(player));
+                closeSession(player);
+                return;
+            }
+            if (!isCurrentMenu(crate, view.getTopInventory()) || !crate.getPrizes().containsAll(selected)) {
+                closeSession(player);
+                return;
+            }
+            if (selected.size() > selectionLimit(player, crate)) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
                 return;
             }
@@ -279,19 +302,26 @@ public class SelectCrateListener implements Listener {
         }
 
         // shortcut: external commands cannot be rolled back; use Items for inventory-safe delivery.
-        int rewardIndex = 0;
-        for (final Prize prize : selected) {
-            final Prize reward = resolved.get(rewardIndex++);
-            try {
-                PrizeManager.finishPrize(player, reward, crate);
+        for (int index = 0; index < selected.size(); index++) {
+            final Prize prize = selected.get(index);
+            final Prize reward = resolved.get(index);
+            runRewardCallback(crate, () -> PrizeManager.finishPrize(player, reward, crate));
+            runRewardCallback(crate, () -> {
                 if (prize.useFireworks()) MiscUtils.spawnFirework(player.getLocation().add(0, 1, 0), null);
-                this.plugin.getServer().getPluginManager().callEvent(new PlayerPrizeEvent(player, crate, crate.getName(), prize));
-            } catch (final RuntimeException exception) {
-                this.plugin.getLogger().log(Level.SEVERE,
-                        "SelectCrate reward callback failed after item delivery: " + crate.getName(), exception);
-            }
+            });
+            runRewardCallback(crate, () -> this.plugin.getServer().getPluginManager()
+                    .callEvent(new PlayerPrizeEvent(player, crate, crate.getName(), prize)));
         }
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
+    }
+
+    private void runRewardCallback(final Crate crate, final Runnable callback) {
+        try {
+            callback.run();
+        } catch (final RuntimeException exception) {
+            this.plugin.getLogger().log(Level.SEVERE,
+                    "SelectCrate reward callback failed after item delivery: " + crate.getName(), exception);
+        }
     }
 
     private void closeSession(final Player player) {
