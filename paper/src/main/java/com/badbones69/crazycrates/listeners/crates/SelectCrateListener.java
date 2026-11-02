@@ -34,9 +34,11 @@ import us.crazycrew.crazycrates.api.enums.types.KeyType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -53,6 +55,7 @@ public class SelectCrateListener implements Listener {
 
     // Store active sessions for players
     private final Map<UUID, SelectCrateSession> sessions = new HashMap<>();
+    private final Set<SelectCrateSession> pendingConfirmations = new HashSet<>();
 
     /**
      * Handles inventory clicks in SelectCrate GUIs.
@@ -126,16 +129,22 @@ public class SelectCrateListener implements Listener {
         final int confirmSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Confirm");
 
         if (slot == confirmSlot) {
+            if (!pendingConfirmations.add(session)) return;
             this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
-                if (sessions.get(player.getUniqueId()) == session
-                        && player.getOpenInventory().getTopInventory() == topInventory) {
-                    handleConfirmClick(player, session, view);
+                try {
+                    if (sessions.get(player.getUniqueId()) == session
+                            && player.getOpenInventory().getTopInventory() == topInventory) {
+                        handleConfirmClick(player, session, view);
+                    }
+                } finally {
+                    pendingConfirmations.remove(session);
                 }
             });
             this.plugin.debug(() -> "Player clicked the confirm button in SelectCrate.");
             return;
         }
 
+        removeBlockedSelections(player, session);
         final int pageCount = SelectCrate.getPageCount(crate, topInventory.getSize());
         if (pageCount > 1) {
             final int previousSlot = SelectCrate.getControlSlot(crate, topInventory.getSize(), "Navigation.Previous");
@@ -317,8 +326,7 @@ public class SelectCrateListener implements Listener {
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
     }
 
-    /** Removes newly blocked choices and rejects the whole confirmation before any debit. */
-    private boolean rejectBlockedSelection(final Player player, final SelectCrateSession session, final Inventory inventory) {
+    private boolean removeBlockedSelections(final Player player, final SelectCrateSession session) {
         boolean blocked = false;
         for (final Prize prize : session.getSelectedPrizes()) {
             if (prize.hasPermission(player)) {
@@ -326,11 +334,15 @@ public class SelectCrateListener implements Listener {
                 blocked = true;
             }
         }
-        if (blocked) {
-            player.sendMessage(SelectCrate.message(session.getCrate(), "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
-            render(player, session, inventory);
-        }
         return blocked;
+    }
+
+    /** Removes newly blocked choices and rejects the whole confirmation before any debit. */
+    private boolean rejectBlockedSelection(final Player player, final SelectCrateSession session, final Inventory inventory) {
+        if (!removeBlockedSelections(player, session)) return false;
+        player.sendMessage(SelectCrate.message(session.getCrate(), "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
+        render(player, session, inventory);
+        return true;
     }
 
     private void runRewardCallback(final Crate crate, final Runnable callback) {

@@ -431,4 +431,46 @@ class SelectCrateListenerTest {
         delivery.verifyNoInteractions();
     }
 
+    @Test void newlyBlockedChoiceReleasesCapacityBeforeSelectingReplacement() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(1);
+        click(0);
+        when(prizes.get(0).hasPermission(player)).thenReturn(true);
+        click(1);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void repeatedConfirmCannotRedeemRemainingChoicesAfterBlacklistRejection() {
+        click(0);
+        click(1);
+        when(prizes.get(0).hasPermission(player)).thenReturn(true);
+        click(49);
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+        // The remaining valid choice needs a new, explicit confirmation.
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void navigatingDropsNewlyBlockedChoicesFromCounter() {
+        for (int index = prizes.size(); index < 46; index++) prizes.add(mock(Prize.class));
+        final CratePrizeMenu holder = new CratePrizeMenu(crate, player, 54, "select");
+        when(top.getHolder(false)).thenReturn(holder);
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(1);
+        click(0);
+        when(prizes.get(0).hasPermission(player)).thenReturn(true);
+        click(50);
+        select.verify(() -> SelectCrate.renderPage(top, player, crate, 1, java.util.Set.of(), 1));
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+    }
+
 }

@@ -125,7 +125,7 @@ Crate:
 
 This list checks permissions; it does not grant them. To make a reward claimable once, configure your permission/reward setup to grant the listed permission after the claim. Existing blacklist behavior is preserved: OP players bypass it. Other crate types keep their existing alternative-reward behavior.
 
-Permissions are rechecked when clicking and confirming, including after item preparation. If a selected reward becomes blocked, the whole confirmation is rejected without consuming keys or delivering any rewards, and blocked choices are removed so the player can choose replacements.
+Permissions are rechecked when clicking and confirming, including after item preparation. Selecting or navigating removes newly blocked choices first, releasing selection capacity and updating the counter. Only one confirmation task may be pending per session; after a rejected batch, redeeming the remaining choices requires a new confirmation. If a selected reward becomes blocked, the whole confirmation is rejected without consuming keys or delivering any rewards, and blocked choices are removed so the player can choose replacements.
 
 ## Important Notes
 

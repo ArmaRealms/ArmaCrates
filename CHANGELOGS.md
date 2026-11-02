@@ -17,6 +17,9 @@
 
 ### Resolvido
 
+- Escolhas do SelectCrate que se tornam bloqueadas liberam o limite de seleção antes de novas escolhas ou navegação.
+- Cliques repetidos em Confirmar não resgatam automaticamente as escolhas restantes após um lote ser rejeitado pela blacklist.
+
 - Fechar ou trocar o menu durante a preparação dos itens invalida a confirmação capturada, preservando uma nova sessão aberta pela integração.
 
 - Confirmação do SelectCrate rejeita permissões de abertura revogadas e menus cujos prêmios foram alterados ou reordenados.
