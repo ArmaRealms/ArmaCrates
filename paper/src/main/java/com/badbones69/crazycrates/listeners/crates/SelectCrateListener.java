@@ -278,7 +278,9 @@ public class SelectCrateListener implements Listener {
             return;
         }
 
-        if (!session.beginConfirmation()) return;
+        if (sessions.get(player.getUniqueId()) != session
+                || player.getOpenInventory().getTopInventory() != view.getTopInventory()
+                || !session.beginConfirmation()) return;
         final SelectCrateInventory original = new SelectCrateInventory(player.getInventory());
         final int originalKeys = this.plugin.getUserManager().getVirtualKeys(player.getUniqueId(), crate.getName());
         // No external callbacks occur between the final validation, key debit and item commit.

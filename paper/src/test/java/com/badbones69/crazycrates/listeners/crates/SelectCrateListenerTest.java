@@ -362,4 +362,48 @@ class SelectCrateListenerTest {
         verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
     }
 
+    @Test void closingAndReopeningDuringPreparationCancelsCapturedConfirmation() {
+        click(0);
+        when(prizes.get(0).hasPermission(player)).thenAnswer(call -> {
+            final InventoryCloseEvent close = mock(InventoryCloseEvent.class);
+            when(close.getPlayer()).thenReturn(player);
+            when(close.getInventory()).thenReturn(top);
+            listener.onInventoryClose(close);
+            // A synchronous integration can reopen the same crate before preparation returns.
+            click(1);
+            return false;
+        });
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void failedVirtualDebitNeverDeliversItemsOrCallbacks() {
+        when(users.takeKeys(anyInt(), any(), anyString(), any(), anyBoolean())).thenReturn(false);
+        click(0);
+        click(49);
+        tick();
+        verify(inventory, never()).setStorageContents(any());
+        verify(player).closeInventory(InventoryCloseEvent.Reason.PLUGIN);
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void missingAlternativeCancelsBatchBeforeDebit() {
+        when(prizes.get(0).hasPermission(player)).thenReturn(true);
+        click(0);
+        click(1);
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
 }

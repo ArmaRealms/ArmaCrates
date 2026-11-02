@@ -13,7 +13,7 @@ SelectCrate is a new crate type for CrazyCrates that allows players to **choose*
 
 4. **Receiving Prizes**: All native reward items are built once, including permission-based alternative rewards. The plugin prepares a detached inventory containing the exact key debit and all reward items, respecting stack sizes, quantities and item metadata. Armor and offhand are not reward storage. Slots freed by physical keys can receive rewards. If the whole batch cannot fit, nothing is consumed or delivered and the player sees: “Você não possui espaço suficiente no inventário para receber todos os produtos selecionados.”
 
-5. **Canceling**: Click Cancel (default slot 53), close the inventory, or disconnect. No keys or rewards change. A confirmation queued before the menu closes is discarded. Repeated confirmation clicks can redeem the session only once.
+5. **Canceling**: Click Cancel (default slot 53), close the inventory, or disconnect. No keys or rewards change. A confirmation queued before the menu closes is discarded. The session and open inventory are checked again after reward preparation, so an integration closing or replacing the menu cannot redeem the previous session. Repeated confirmation clicks can redeem the session only once.
 
 ## Delivery limits
 

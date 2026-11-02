@@ -15,6 +15,8 @@
 
 ### Resolvido
 
+- Fechar ou trocar o menu durante a preparação dos itens invalida a confirmação capturada, preservando uma nova sessão aberta pela integração.
+
 - Confirmação do SelectCrate rejeita permissões de abertura revogadas e menus cujos prêmios foram alterados ou reordenados.
 - Falhas em comandos ou fogos não impedem o evento de recebimento de itens já entregues no SelectCrate.
 
