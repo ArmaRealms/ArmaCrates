@@ -278,20 +278,16 @@ class SelectCrateListenerTest {
         delivery.verifyNoInteractions();
     }
 
-    @Test void alternativePrizeItemsAreValidatedAndDelivered() {
+    @Test void blacklistedPrizeCannotBeSelectedEvenWithAlternative() {
         final Prize alternative = mock(Prize.class);
-        final ItemStack reward = item();
-        when(alternative.getItems()).thenReturn(List.of(reward));
         when(prizes.get(0).hasPermission(player)).thenReturn(true);
         when(prizes.get(0).getAlternativePrize()).thenReturn(alternative);
         click(0);
         click(49);
         tick();
-        verify(inventory).setStorageContents(argThat(contents -> contents[0] == reward));
-        delivery.verify(() -> PrizeManager.finishPrize(player, alternative, crate));
-        final var event = ArgumentCaptor.forClass(PlayerPrizeEvent.class);
-        verify(plugin.getServer().getPluginManager()).callEvent(event.capture());
-        assertSame(prizes.get(0), event.getValue().getPrize());
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
     }
 
     @Test void callbackFailureDoesNotRepeatDebitOrPreventLaterRewards() {
@@ -395,10 +391,39 @@ class SelectCrateListenerTest {
         delivery.verifyNoInteractions();
     }
 
-    @Test void missingAlternativeCancelsBatchBeforeDebit() {
+    @Test void newlyBlacklistedPrizeCancelsWholeBatchAndCanBeReplaced() {
+        click(0);
+        click(1);
+        when(prizes.get(0).hasPermission(player)).thenReturn(true);
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+        click(2);
+        click(49);
+        tick();
+        verify(users).takeKeys(2, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(2), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void blockedSlotDoesNotUseSelectionCapacity() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(1);
         when(prizes.get(0).hasPermission(player)).thenReturn(true);
         click(0);
         click(1);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void blacklistGrantedDuringPreparationRejectsBatch() {
+        click(0);
+        when(prizes.get(0).hasPermission(player)).thenReturn(false, true);
         click(49);
         tick();
         verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());

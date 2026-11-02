@@ -11,7 +11,7 @@ SelectCrate is a new crate type for CrazyCrates that allows players to **choose*
 
 3. **Confirming**: Click the confirmation button (default slot 49 in a 54-slot menu). The plugin revalidates the current crate, opening permission, selections, key balance and inventory. A changed prize list invalidates the displayed menu, including changes made before the first click. Each selected reward costs `max(1, RequiredKeys)` keys. Free openings allow one reward. The opening key source is preserved: physical and virtual keys are not combined. When opening from held keys, only the main hand and offhand count; other physical openings use storage and offhand.
 
-4. **Receiving Prizes**: All native reward items are built once, including permission-based alternative rewards. The plugin prepares a detached inventory containing the exact key debit and all reward items, respecting stack sizes, quantities and item metadata. Armor and offhand are not reward storage. Slots freed by physical keys can receive rewards. If the whole batch cannot fit, nothing is consumed or delivered and the player sees: “Você não possui espaço suficiente no inventário para receber todos os produtos selecionados.”
+4. **Receiving Prizes**: All native reward items are built once. Blacklisted prizes cannot be selected, even if they define an alternative reward. The plugin prepares a detached inventory containing the exact key debit and all reward items, respecting stack sizes, quantities and item metadata. Armor and offhand are not reward storage. Slots freed by physical keys can receive rewards. If the whole batch cannot fit, nothing is consumed or delivered and the player sees: “Você não possui espaço suficiente no inventário para receber todos os produtos selecionados.”
 
 5. **Canceling**: Click Cancel (default slot 53), close the inventory, or disconnect. No keys or rewards change. A confirmation queued before the menu closes is discarded. The session and open inventory are checked again after reward preparation, so an integration closing or replacing the menu cannot redeem the previous session. Repeated confirmation clicks can redeem the session only once.
 
@@ -69,12 +69,19 @@ Crate:
       Lore:
         - '&7This prize is selected.'
     
+    BlockedPrize:
+      Material: STRUCTURE_VOID
+      Name: '&cPrêmio indisponível'
+      Lore:
+        - '&7Você não pode selecionar este prêmio.'
+
     Messages:
       NoSelection: '&cSelecione ao menos um produto antes de confirmar!'
       Counter: '&eSelecionados: %selected%/%limit%'
       Cancel: '&cCancelar'
       SelectionLimit: '&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro.'
       Unavailable: '&cLimite atingido. Desmarque outro produto.'
+      BlockedPrize: '&cVocê não pode selecionar este prêmio.'
       InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
       InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'
 ```
@@ -103,6 +110,22 @@ Prizes in SelectCrate work the same as other crate types, but MaxRange and Chanc
       Commands:
         - 'eco give %player% 10000'
 ```
+
+## Blacklisted rewards
+
+Add permissions to each prize's `BlackListed-Permissions` list. If the player has any listed permission, SelectCrate replaces that prize's icon with `Crate.SelectCrate.BlockedPrize` and rejects selection. The default icon is `STRUCTURE_VOID`; its material, name and lore are configurable. `Crate.SelectCrate.Messages.BlockedPrize` configures the click/confirmation warning.
+
+```yaml
+Crate:
+  Prizes:
+    1:
+      BlackListed-Permissions:
+        - crazycrates.claimed.select_sword
+```
+
+This list checks permissions; it does not grant them. To make a reward claimable once, configure your permission/reward setup to grant the listed permission after the claim. Existing blacklist behavior is preserved: OP players bypass it. Other crate types keep their existing alternative-reward behavior.
+
+Permissions are rechecked when clicking and confirming, including after item preparation. If a selected reward becomes blocked, the whole confirmation is rejected without consuming keys or delivering any rewards, and blocked choices are removed so the player can choose replacements.
 
 ## Important Notes
 

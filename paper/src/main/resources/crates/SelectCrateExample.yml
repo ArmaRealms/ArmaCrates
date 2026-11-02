@@ -64,6 +64,13 @@ Crate:
     SelectionMarker:
       # Name added to lore when item is selected
       Name: '&e&l✓ SELECTED'
+    # Replaces the prize icon when the player has a BlackListed-Permissions permission.
+    # Uses the existing blacklist behavior: OP players bypass this restriction.
+    BlockedPrize:
+      Material: STRUCTURE_VOID
+      Name: '&cPrêmio indisponível'
+      Lore:
+        - '&7Você não pode selecionar este prêmio.'
     # Custom messages
     Messages:
       # Message shown when player tries to confirm without selecting a prize
@@ -72,6 +79,7 @@ Crate:
       Cancel: '&cCancelar'
       SelectionLimit: '&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro.'
       Unavailable: '&cLimite atingido. Desmarque outro produto.'
+      BlockedPrize: '&cVocê não pode selecionar este prêmio.'
       InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
       InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'
   # Item the crate is in the GUI
@@ -133,6 +141,9 @@ Crate:
       Lore:
         - '&7A powerful diamond sword!'
         - '&7Perfect for combat.'
+      # Players with any listed permission cannot select this reward, even with Alternative-Prize.
+      # Example: ['crazycrates.claimed.select_sword']. Grant the permission through your reward setup.
+      BlackListed-Permissions: []
       # For SelectCrate, MaxRange and Chance are not used
       # All prizes are available for selection
       MaxRange: 100

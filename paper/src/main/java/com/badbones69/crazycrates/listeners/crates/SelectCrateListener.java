@@ -152,7 +152,10 @@ public class SelectCrateListener implements Listener {
         if (slot >= SelectCrate.getPrizesPerPage(topInventory.getSize()) || index >= crate.getPrizes().size()) return;
         final Prize prize = crate.getPrizes().get(index);
         final int limit = selectionLimit(player, crate);
-        if (!session.togglePrize(prize, limit)) {
+        if (prize.hasPermission(player)) {
+            session.togglePrize(prize, 0);
+            player.sendMessage(SelectCrate.message(crate, "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
+        } else if (!session.togglePrize(prize, limit)) {
             player.sendMessage(SelectCrate.message(crate, "SelectionLimit", "&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro."));
         }
         render(player, session, topInventory);
@@ -203,6 +206,8 @@ public class SelectCrateListener implements Listener {
     private void handleConfirmClick(final Player player, final SelectCrateSession session, final InventoryView view) {
         final Crate crate = session.getCrate();
 
+        if (rejectBlockedSelection(player, session, view.getTopInventory())) return;
+
         // Check if player has selected a prize
         if (!session.hasSelection()) {
             final String message = crate.getFile() != null ?
@@ -228,25 +233,19 @@ public class SelectCrateListener implements Listener {
             return;
         }
 
-        final List<Prize> resolved = new ArrayList<>();
         final List<ItemStack> items = new ArrayList<>();
         final SelectCrateInventory candidate;
         final int cost = Math.multiplyExact(selected.size(), Math.max(1, crate.getRequiredKeys()));
         try {
             for (final Prize prize : selected) {
-                final Prize reward = prize.hasPermission(player) ? prize.getAlternativePrize() : prize;
-                if (reward == null) throw new IllegalArgumentException("Missing alternative prize");
-                resolved.add(reward);
-                for (final ItemStack item : reward.getItems()) {
+                for (final ItemStack item : prize.getItems()) {
                     if (item == null) throw new IllegalArgumentException("Missing reward item");
                     items.add(item.clone());
                 }
-                for (final ItemBuilder builder : reward.getItemBuilders()) {
+                for (final ItemBuilder builder : prize.getItemBuilders()) {
                     items.add(new ItemBuilder(builder).setTarget(player).build());
                 }
             }
-            // Item builders may call integrations; capture and validate inventory afterwards.
-            candidate = new SelectCrateInventory(player.getInventory());
             if (!player.hasPermission("crazycrates.open." + crate.getName())
                     || !player.hasPermission("crazycrates.open." + crate.getName().toLowerCase(Locale.ROOT))) {
                 player.sendMessage(Messages.no_crate_permission.getMessage(player));
@@ -257,10 +256,13 @@ public class SelectCrateListener implements Listener {
                 closeSession(player);
                 return;
             }
+            if (rejectBlockedSelection(player, session, view.getTopInventory())) return;
             if (selected.size() > selectionLimit(player, crate)) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
                 return;
             }
+            // Item builders and permission checks may call integrations; capture inventory afterwards.
+            candidate = new SelectCrateInventory(player.getInventory());
             if (type == KeyType.physical_key && !candidate.takeKeys(cost,
                     item -> ItemUtils.isSimilar(item, crate), this.crateManager.getHand(player))) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
@@ -304,10 +306,8 @@ public class SelectCrateListener implements Listener {
         }
 
         // shortcut: external commands cannot be rolled back; use Items for inventory-safe delivery.
-        for (int index = 0; index < selected.size(); index++) {
-            final Prize prize = selected.get(index);
-            final Prize reward = resolved.get(index);
-            runRewardCallback(crate, () -> PrizeManager.finishPrize(player, reward, crate));
+        for (final Prize prize : selected) {
+            runRewardCallback(crate, () -> PrizeManager.finishPrize(player, prize, crate));
             runRewardCallback(crate, () -> {
                 if (prize.useFireworks()) MiscUtils.spawnFirework(player.getLocation().add(0, 1, 0), null);
             });
@@ -315,6 +315,22 @@ public class SelectCrateListener implements Listener {
                     .callEvent(new PlayerPrizeEvent(player, crate, crate.getName(), prize)));
         }
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
+    }
+
+    /** Removes newly blocked choices and rejects the whole confirmation before any debit. */
+    private boolean rejectBlockedSelection(final Player player, final SelectCrateSession session, final Inventory inventory) {
+        boolean blocked = false;
+        for (final Prize prize : session.getSelectedPrizes()) {
+            if (prize.hasPermission(player)) {
+                session.togglePrize(prize, 0);
+                blocked = true;
+            }
+        }
+        if (blocked) {
+            player.sendMessage(SelectCrate.message(session.getCrate(), "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
+            render(player, session, inventory);
+        }
+        return blocked;
     }
 
     private void runRewardCallback(final Crate crate, final Runnable callback) {

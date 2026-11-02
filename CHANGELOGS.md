@@ -4,6 +4,8 @@
 
 ### Adicionado
 
+- SelectCrate bloqueia prêmios conforme `BlackListed-Permissions`, com ícone configurável em `SelectCrate.BlockedPrize` (`STRUCTURE_VOID` por padrão) e revalidação antes da entrega.
+
 - Seleção múltipla de prêmios no SelectCrate conforme o saldo de chaves e o custo por prêmio, com contador, desmarcação entre páginas e botão de cancelamento.
 - Validação conjunta do inventário antes da entrega de itens nativos, incluindo empilhamento, quantidades, metadados e espaço liberado pelas chaves físicas consumidas.
 - Revalidação na confirmação e proteção contra cliques repetidos, com restauração de inventário e chaves virtuais em falhas de aplicação dos itens.

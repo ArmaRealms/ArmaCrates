@@ -151,6 +151,10 @@ public class SelectCrate extends CrateBuilder {
         for (int prizeIndex = firstPrize; prizeIndex < lastPrize; prizeIndex++) {
             final Prize prize = prizes.get(prizeIndex);
             final int slot = prizeIndex - firstPrize;
+            if (prize.hasPermission(player)) {
+                inventory.setItem(slot, getBlockedPrize(file).build());
+                continue;
+            }
             final ItemStack item = selectedPrizes.contains(prize)
                     ? getSelectionMarker(file).build()
                     : prize.getDisplayItem(player);
@@ -298,6 +302,16 @@ public class SelectCrate extends CrateBuilder {
         if (slot >= 0 && slot < inventory.getSize()) {
             inventory.setItem(slot, item);
         }
+    }
+
+    /** Creates the configurable icon used instead of a blacklisted prize. */
+    public static ItemBuilder getBlockedPrize(final FileConfiguration file) {
+        final String path = "Crate.SelectCrate.BlockedPrize.";
+        final String material = file == null ? "STRUCTURE_VOID" : file.getString(path + "Material", "STRUCTURE_VOID");
+        final String name = file == null ? "&cPrêmio indisponível" : file.getString(path + "Name", "&cPrêmio indisponível");
+        final List<String> defaultLore = List.of("&7Você não pode selecionar este prêmio.");
+        final List<String> lore = file != null && file.contains(path + "Lore") ? file.getStringList(path + "Lore") : defaultLore;
+        return new ItemBuilder().setMaterial(material).setName(MsgUtils.color(name)).setLore(lore);
     }
 
     /**
