@@ -15,6 +15,7 @@ import com.badbones69.crazycrates.tasks.crates.CrateManager;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
 import org.bukkit.Material;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -528,6 +529,50 @@ class SelectCrateListenerTest {
         verify(inventory).setStorageContents(argThat(contents -> contents[0] == prizes.get(0).getItems().getFirst()));
         verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
         delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+    }
+
+    @Test void defaultCapPreventsSixthSelectionWithSufficientBalance() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(100);
+        for (int slot = 0; slot < 6; slot++) click(slot);
+        click(49);
+        tick();
+        verify(users).takeKeys(5, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(5), crate), never());
+    }
+
+    @Test void capReducedBeforeConfirmationRejectsBatchUntilPlayerDeselects() {
+        final YamlConfiguration config = new YamlConfiguration();
+        when(crate.getFile()).thenReturn(config);
+        click(0);
+        click(1);
+        click(49);
+        config.set("Crate.SelectCrate.MaxSelections", 1);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        delivery.verifyNoInteractions();
+        click(0);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void capReducedDuringPreparationRejectsWholeBatch() {
+        final YamlConfiguration config = new YamlConfiguration();
+        when(crate.getFile()).thenReturn(config);
+        click(0);
+        click(1);
+        final List<ItemStack> rewards = prizes.get(0).getItems();
+        when(prizes.get(0).getItems()).thenAnswer(call -> {
+            config.set("Crate.SelectCrate.MaxSelections", 1);
+            return rewards;
+        });
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
     }
 
 }

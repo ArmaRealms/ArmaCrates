@@ -56,6 +56,13 @@ public class SelectCrateSession {
         return Collections.unmodifiableSet(new LinkedHashSet<>(this.selectedPrizes));
     }
 
+    /** Returns the configured count cap; free openings retain their single-choice limit. */
+    public static int getMaxSelections(final Crate crate, final boolean free) {
+        if (free) return 1;
+        final var file = crate.getFile();
+        return Math.max(1, file == null ? 5 : file.getInt("Crate.SelectCrate.MaxSelections", 5));
+    }
+
     /** Sums key costs without overflowing an integer balance. Free openings allow one choice. */
     public static long getSelectionCost(final Crate crate, final Collection<Prize> prizes, final boolean free) {
         return free ? prizes.size() : prizes.stream().mapToLong(prize -> prize.getRequiredKeys(crate.getRequiredKeys())).sum();
@@ -69,9 +76,10 @@ public class SelectCrateSession {
     public boolean togglePrize(final Prize prize, final int availableKeys, final boolean free) {
         if (this.confirming) return false;
         if (this.selectedPrizes.remove(prize)) return true;
+        if (this.selectedPrizes.size() >= getMaxSelections(this.crate, free)) return false;
         final long cost = getSelectionCost(this.crate, this.selectedPrizes, free)
                 + (free ? 1 : prize.getRequiredKeys(this.crate.getRequiredKeys()));
-        return cost <= availableKeys && (!free || this.selectedPrizes.isEmpty()) && this.selectedPrizes.add(prize);
+        return cost <= availableKeys && this.selectedPrizes.add(prize);
     }
 
     /** Invalidates queued confirmations as soon as Cancel is clicked. */

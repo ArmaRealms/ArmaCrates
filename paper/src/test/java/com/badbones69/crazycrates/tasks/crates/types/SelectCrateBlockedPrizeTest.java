@@ -75,4 +75,31 @@ class SelectCrateBlockedPrizeTest {
         }
     }
 
+    @Test void configuredCapShowsUnavailableNoticeEvenWithEnoughKeys() {
+        final Crate crate = mock(Crate.class);
+        final Prize selected = mock(Prize.class);
+        final Prize other = mock(Prize.class);
+        final Player player = mock(Player.class);
+        final Inventory inventory = mock(Inventory.class);
+        final ItemStack display = mock(ItemStack.class);
+        final ItemMeta meta = mock(ItemMeta.class);
+        final ItemStack icon = mock(ItemStack.class);
+        final YamlConfiguration config = new YamlConfiguration();
+        config.set("Crate.SelectCrate.MaxSelections", 1);
+        when(crate.getFile()).thenReturn(config);
+        when(crate.getPrizes()).thenReturn(List.of(selected, other));
+        when(selected.getRequiredKeys(anyInt())).thenReturn(1);
+        when(other.getRequiredKeys(anyInt())).thenReturn(1);
+        when(other.getDisplayItem(player)).thenReturn(display);
+        when(inventory.getSize()).thenReturn(54);
+        doAnswer(call -> { ((Consumer<ItemMeta>) call.getArgument(0)).accept(meta); return true; })
+                .when(display).editMeta(any(Consumer.class));
+        try (var builders = mockConstruction(ItemBuilder.class, withSettings().defaultAnswer(RETURNS_SELF),
+                (builder, context) -> when(builder.build()).thenReturn(icon))) {
+            SelectCrate.renderPage(inventory, player, crate, 0, Set.of(selected), 100, false);
+            verify(meta).setLore(argThat(lore -> lore.stream().anyMatch(line -> line.contains("no máximo 1"))));
+            verify(builders.constructed().get(1)).addLore(contains("Selecionados: 1/1"));
+        }
+    }
+
 }

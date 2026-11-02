@@ -23,6 +23,9 @@ Crate:
   BroadCast: '%prefix%&6&l%player%&r &7is choosing a prize from the &6&lSelect Crate.'
   # SelectCrate specific configuration
   SelectCrate:
+    # Maximum distinct prizes selected per confirmation. Omitted: 5. Minimum: 1.
+    # The combined key cost must also fit the player's balance.
+    MaxSelections: 5
     GUI:
       # Size of the selection GUI (must be a multiple of 9, max 54)
       Size: 54
@@ -75,11 +78,12 @@ Crate:
     Messages:
       # Message shown when player tries to confirm without selecting a prize
       NoSelection: '&cSelecione ao menos um produto antes de confirmar!'
-      Counter: '&eSelecionados: %selected% | Chaves: %cost%/%keys%'
+      Counter: '&eSelecionados: %selected%/%max% | Chaves: %cost%/%keys%'
       Cancel: '&cCancelar'
       SelectionLimit: '&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto.'
       Unavailable: '&cSaldo insuficiente. Desmarque outro produto.'
       PrizeCost: '&7Custo: %cost% chave(s).'
+      MaxSelections: '&cVocê pode selecionar no máximo %max% prêmios.'
       BlockedPrize: '&cVocê não pode selecionar este prêmio.'
       InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
       InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'

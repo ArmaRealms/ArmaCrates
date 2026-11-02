@@ -146,6 +146,7 @@ public class SelectCrate extends CrateBuilder {
 
         inventory.clear();
 
+        final int maxSelections = SelectCrateSession.getMaxSelections(crate, free);
         final long selectedCost = SelectCrateSession.getSelectionCost(crate, selectedPrizes, free);
         final List<Prize> prizes = crate.getPrizes();
         final int firstPrize = safePage * prizesPerPage;
@@ -166,7 +167,10 @@ public class SelectCrate extends CrateBuilder {
                 final List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
                 lore.add(message(crate, "PrizeCost", "&7Custo: %cost% chave(s).")
                         .replace("%cost%", Integer.toString(free ? 0 : prizeCost)));
-                if (!selectedPrizes.contains(prize) && selectedCost + prizeCost > availableKeys) {
+                if (!selectedPrizes.contains(prize) && selectedPrizes.size() >= maxSelections) {
+                    lore.add(message(crate, "MaxSelections", "&cVocê pode selecionar no máximo %max% prêmios.")
+                            .replace("%max%", Integer.toString(maxSelections)));
+                } else if (!selectedPrizes.contains(prize) && selectedCost + prizeCost > availableKeys) {
                     lore.add(message(crate, "Unavailable", "&cSaldo insuficiente. Desmarque outro produto."));
                 }
                 meta.setLore(lore);
@@ -177,8 +181,9 @@ public class SelectCrate extends CrateBuilder {
         addGlass(inventory, file);
 
         final int confirmSlot = getControlSlot(crate, inventory.getSize(), "Confirm");
-        final String counter = message(crate, "Counter", "&eSelecionados: %selected% | Chaves: %cost%/%keys%")
+        final String counter = message(crate, "Counter", "&eSelecionados: %selected%/%max% | Chaves: %cost%/%keys%")
                 .replace("%selected%", Integer.toString(selectedPrizes.size()))
+                .replace("%max%", Integer.toString(maxSelections))
                 .replace("%cost%", Long.toString(free ? 0 : selectedCost))
                 .replace("%keys%", Integer.toString(free ? 0 : availableKeys))
                 .replace("%limit%", Integer.toString(availableKeys));

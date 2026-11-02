@@ -3,6 +3,7 @@ package com.badbones69.crazycrates.tasks.crates.other;
 import com.badbones69.crazycrates.api.objects.Crate;
 import com.badbones69.crazycrates.api.objects.Prize;
 import org.bukkit.entity.Player;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -75,6 +76,40 @@ class SelectCrateSessionTest {
         assertTrue(session.togglePrize(first, 0));
         assertTrue(session.togglePrize(first, 1, true));
         assertFalse(session.togglePrize(second, 1, true));
+    }
+
+    @Test void defaultSelectionCapIsFiveEvenWithPlentyOfKeys() {
+        final SelectCrateSession session = new SelectCrateSession(mock(Player.class), mock(Crate.class));
+        for (int i = 0; i < 5; i++) assertTrue(session.togglePrize(prize(), 100));
+        assertFalse(session.togglePrize(prize(), 100));
+    }
+
+    @Test void configuredCapCanBeLowerOrHigherAndDeselectingStillWorks() {
+        for (final int limit : java.util.List.of(1, 3, 8)) {
+            final Crate crate = mock(Crate.class);
+            final YamlConfiguration config = new YamlConfiguration();
+            config.set("Crate.SelectCrate.MaxSelections", limit);
+            when(crate.getFile()).thenReturn(config);
+            final SelectCrateSession session = new SelectCrateSession(mock(Player.class), crate);
+            final Prize first = prize();
+            assertTrue(session.togglePrize(first, 100));
+            for (int i = 1; i < limit; i++) assertTrue(session.togglePrize(prize(), 100));
+            assertFalse(session.togglePrize(prize(), 100));
+            assertTrue(session.togglePrize(first, 0));
+            assertTrue(session.togglePrize(prize(), 100));
+        }
+    }
+
+    @Test void nonPositiveCapsUseOneAndFreeOpeningsKeepTheirSingleChoice() {
+        final Crate crate = mock(Crate.class);
+        final YamlConfiguration config = new YamlConfiguration();
+        when(crate.getFile()).thenReturn(config);
+        for (final int configured : java.util.List.of(0, -1)) {
+            config.set("Crate.SelectCrate.MaxSelections", configured);
+            assertEquals(1, SelectCrateSession.getMaxSelections(crate, false));
+        }
+        config.set("Crate.SelectCrate.MaxSelections", 8);
+        assertEquals(1, SelectCrateSession.getMaxSelections(crate, true));
     }
 
 }

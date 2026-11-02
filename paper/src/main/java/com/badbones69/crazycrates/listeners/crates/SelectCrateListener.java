@@ -161,11 +161,16 @@ public class SelectCrateListener implements Listener {
         if (slot >= SelectCrate.getPrizesPerPage(topInventory.getSize()) || index >= crate.getPrizes().size()) return;
         final Prize prize = crate.getPrizes().get(index);
         final int balance = availableKeys(player, crate);
+        final boolean free = this.crateManager.getPlayerKeyType(player) == KeyType.free_key;
         if (prize.hasPermission(player)) {
             session.togglePrize(prize, 0);
             player.sendMessage(SelectCrate.message(crate, "BlockedPrize", "&cVocê não pode selecionar este prêmio."));
-        } else if (!session.togglePrize(prize, balance, this.crateManager.getPlayerKeyType(player) == KeyType.free_key)) {
-            player.sendMessage(SelectCrate.message(crate, "SelectionLimit", "&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto."));
+        } else if (!session.togglePrize(prize, balance, free)) {
+            final int max = SelectCrateSession.getMaxSelections(crate, free);
+            player.sendMessage(session.getSelectedPrizes().size() >= max
+                    ? SelectCrate.message(crate, "MaxSelections", "&cVocê pode selecionar no máximo %max% prêmios.")
+                            .replace("%max%", Integer.toString(max))
+                    : SelectCrate.message(crate, "SelectionLimit", "&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto."));
         }
         render(player, session, topInventory);
         crate.playSound(player, player.getLocation(), "click-sound", "UI_BUTTON_CLICK", SoundCategory.PLAYERS);
@@ -216,7 +221,8 @@ public class SelectCrateListener implements Listener {
     private void handleConfirmClick(final Player player, final SelectCrateSession session, final InventoryView view) {
         final Crate crate = session.getCrate();
 
-        if (rejectBlockedSelection(player, session, view.getTopInventory())) return;
+        if (rejectBlockedSelection(player, session, view.getTopInventory())
+                || rejectSelectionLimit(player, session, view.getTopInventory())) return;
 
         // Check if player has selected a prize
         if (!session.hasSelection()) {
@@ -266,7 +272,8 @@ public class SelectCrateListener implements Listener {
                 closeSession(player);
                 return;
             }
-            if (rejectBlockedSelection(player, session, view.getTopInventory())) return;
+            if (rejectBlockedSelection(player, session, view.getTopInventory())
+                    || rejectSelectionLimit(player, session, view.getTopInventory())) return;
             if (SelectCrateSession.getSelectionCost(crate, selected, type == KeyType.free_key) > availableKeys(player, crate)) {
                 player.sendMessage(Messages.no_keys.getMessage(player));
                 return;
@@ -326,6 +333,16 @@ public class SelectCrateListener implements Listener {
                     .callEvent(new PlayerPrizeEvent(player, crate, crate.getName(), prize)));
         }
         crate.playSound(player, player.getLocation(), "stop-sound", "BLOCK_ANVIL_PLACE", SoundCategory.PLAYERS);
+    }
+
+    private boolean rejectSelectionLimit(final Player player, final SelectCrateSession session, final Inventory inventory) {
+        final int max = SelectCrateSession.getMaxSelections(session.getCrate(),
+                this.crateManager.getPlayerKeyType(player) == KeyType.free_key);
+        if (session.getSelectedPrizes().size() <= max) return false;
+        player.sendMessage(SelectCrate.message(session.getCrate(), "MaxSelections", "&cVocê pode selecionar no máximo %max% prêmios.")
+                .replace("%max%", Integer.toString(max)));
+        render(player, session, inventory);
+        return true;
     }
 
     private boolean removeBlockedSelections(final Player player, final SelectCrateSession session) {

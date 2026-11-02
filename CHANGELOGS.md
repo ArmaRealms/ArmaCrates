@@ -4,6 +4,8 @@
 
 ### Adicionado
 
+- Limite configurável de prêmios simultâneos em `Crate.SelectCrate.MaxSelections`, com padrão 5, contador e revalidação na confirmação.
+
 - SelectCrate aceita `RequiredKeys` por prêmio, com prioridade sobre o custo global e cobrança da soma das escolhas. A interface mostra os custos individuais e o orçamento total.
 
 - SelectCrate bloqueia prêmios conforme `BlackListed-Permissions`, com ícone configurável em `SelectCrate.BlockedPrize` (`STRUCTURE_VOID` por padrão) e revalidação antes da entrega.
