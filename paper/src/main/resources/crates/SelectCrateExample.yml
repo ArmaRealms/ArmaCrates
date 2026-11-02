@@ -200,3 +200,15 @@ Crate:
       Chance: 100
       Items:
         - 'Item:POTION, Amount:3, PotionType:STRENGTH, Level:2'
+    7:
+      # Requires Oraxen. Replace example_sword in DisplayItem and Items with an existing Oraxen item ID.
+      DisplayName: '&6&lOraxen Sword (Example)'
+      DisplayItem: 'or:example_sword'
+      DisplayAmount: 1
+      Lore:
+        - '&7An example reward using an Oraxen item.'
+        - '&7Receives the item through the native inventory delivery.'
+      MaxRange: 100
+      Chance: 100
+      Items:
+        - 'Item:or:example_sword, Amount:1'
