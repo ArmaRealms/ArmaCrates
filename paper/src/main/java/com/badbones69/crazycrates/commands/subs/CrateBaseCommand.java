@@ -479,7 +479,7 @@ public class CrateBaseCommand extends BaseCommand {
             return;
         }
 
-        if (MiscUtils.isInventoryFull(player)) {
+        if (crate.getCrateType() != CrateType.select_crate && MiscUtils.isInventoryFull(player)) {
             if (sender instanceof final Player person) {
                 sender.sendMessage(Messages.inventory_not_empty.getMessage(person));
 
@@ -560,7 +560,7 @@ public class CrateBaseCommand extends BaseCommand {
             return;
         }
 
-        if (MiscUtils.isInventoryFull(player)) {
+        if (crate.getCrateType() != CrateType.select_crate && MiscUtils.isInventoryFull(player)) {
             player.sendMessage(Messages.inventory_not_empty.getMessage(player));
 
             return;

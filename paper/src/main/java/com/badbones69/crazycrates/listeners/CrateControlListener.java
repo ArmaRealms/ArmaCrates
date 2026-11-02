@@ -151,7 +151,7 @@ public class CrateControlListener implements Listener {
                             }
                         }
 
-                        if (MiscUtils.isInventoryFull(player)) {
+                        if (crate.getCrateType() != CrateType.select_crate && MiscUtils.isInventoryFull(player)) {
                             player.sendMessage(Messages.inventory_not_empty.getMessage(player));
                             return;
                         }

@@ -21,6 +21,8 @@
 
 ### Resolvido
 
+- A abertura do SelectCrate por caixa física, menu e comandos não exige um slot vazio; a confirmação continua validando se todos os itens cabem após o débito das chaves físicas.
+
 - Escolhas do SelectCrate que se tornam bloqueadas liberam o limite de seleção antes de novas escolhas ou navegação.
 - Cliques repetidos em Confirmar não resgatam automaticamente as escolhas restantes após um lote ser rejeitado pela blacklist.
 

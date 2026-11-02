@@ -76,6 +76,8 @@ class SelectCrateListenerTest {
         when(plugin.getUserManager()).thenReturn(users);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_keys)).thenReturn("No keys");
+        when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.inventory_not_empty)).thenReturn("Inventory full");
+        when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.required_keys)).thenReturn("Insufficient keys");
         when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_crate_permission)).thenReturn("No permission");
         when(plugin.getCrazyHandler().getConfigManager().getConfig().getProperty(ConfigKeys.command_prefix)).thenReturn("");
         select = mockStatic(SelectCrate.class, CALLS_REAL_METHODS);
@@ -573,6 +575,19 @@ class SelectCrateListenerTest {
         verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
         verify(inventory, never()).setStorageContents(any());
         delivery.verifyNoInteractions();
+    }
+
+    @Test void fullInventoryCanConfirmRewardWithoutNativeItems() {
+        final ItemStack[] full = new ItemStack[36];
+        java.util.Arrays.fill(full, item());
+        when(inventory.getStorageContents()).thenReturn(full);
+        when(prizes.get(0).getItems()).thenReturn(List.of());
+        click(0);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+        delivery.verifyNoMoreInteractions();
     }
 
 }
