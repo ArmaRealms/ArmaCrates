@@ -1,5 +1,25 @@
 # Changelogs
 
+## Unreleased
+
+### Adicionado
+
+- Seleção múltipla de prêmios no SelectCrate conforme o saldo de chaves e o custo por prêmio, com contador, desmarcação entre páginas e botão de cancelamento.
+- Validação conjunta do inventário antes da entrega de itens nativos, incluindo empilhamento, quantidades, metadados e espaço liberado pelas chaves físicas consumidas.
+- Revalidação na confirmação e proteção contra cliques repetidos, com restauração de inventário e chaves virtuais em falhas de aplicação dos itens.
+
+### Alterado
+
+- Controles do SelectCrate permanecem em slots distintos fora da área de prêmios, inclusive em menus menores.
+- Comandos de recompensa são mantidos após a entrega de itens; os efeitos de plugins externos não oferecem validação de espaço nem reversão.
+
+### Resolvido
+
+- Fechar ou trocar o menu durante a preparação dos itens invalida a confirmação capturada, preservando uma nova sessão aberta pela integração.
+
+- Confirmação do SelectCrate rejeita permissões de abertura revogadas e menus cujos prêmios foram alterados ou reordenados.
+- Falhas em comandos ou fogos não impedem o evento de recebimento de itens já entregues no SelectCrate.
+
 ## 2.0.0
 
 ### Mudanças incompatíveis

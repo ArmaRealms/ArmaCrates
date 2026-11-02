@@ -4,22 +4,23 @@ import com.badbones69.crazycrates.api.objects.Crate;
 import com.badbones69.crazycrates.api.objects.Prize;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Represents a player's session when opening a SelectCrate.
- * Tracks the selected prize and crate information.
+ * Tracks selected prizes, pagination and confirmation state.
  */
 public class SelectCrateSession {
 
     private final UUID playerUUID;
     private final Crate crate;
-    private Prize selectedPrize;
-    private int selectedSlot;
+    private final Set<Prize> selectedPrizes = new LinkedHashSet<>();
+    private boolean confirming;
     private int currentPage;
-    private int selectedPage;
 
     /**
      * Creates a new SelectCrate session for a player.
@@ -30,10 +31,7 @@ public class SelectCrateSession {
     public SelectCrateSession(@NotNull Player player, @NotNull Crate crate) {
         this.playerUUID = player.getUniqueId();
         this.crate = crate;
-        this.selectedPrize = null;
-        this.selectedSlot = -1;
         this.currentPage = 0;
-        this.selectedPage = -1;
     }
 
     /**
@@ -52,31 +50,28 @@ public class SelectCrateSession {
         return this.crate;
     }
 
-    /**
-     * @return the currently selected prize, or null if none selected
-     */
-    @Nullable
-    public Prize getSelectedPrize() {
-        return this.selectedPrize;
+    /** Returns an immutable snapshot in selection order. */
+    public Set<Prize> getSelectedPrizes() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(this.selectedPrizes));
     }
 
-    /**
-     * Sets the selected prize.
-     *
-     * @param prize the prize to select
-     * @param slot  the slot of the selected prize
-     */
-    public void setSelectedPrize(@Nullable Prize prize, int slot) {
-        this.selectedPrize = prize;
-        this.selectedSlot = slot;
-        this.selectedPage = this.currentPage;
+    /** Toggles a prize without allowing the current key limit to be exceeded. */
+    public boolean togglePrize(final Prize prize, final int limit) {
+        if (this.confirming) return false;
+        if (this.selectedPrizes.remove(prize)) return true;
+        return this.selectedPrizes.size() < limit && this.selectedPrizes.add(prize);
     }
 
-    /**
-     * @return the slot of the selected prize, or -1 if none selected
-     */
-    public int getSelectedSlot() {
-        return this.selectedSlot;
+    /** Invalidates queued confirmations as soon as Cancel is clicked. */
+    public void cancel() {
+        this.confirming = true;
+    }
+
+    /** Locks this session before any mutation or external callback. */
+    public boolean beginConfirmation() {
+        if (this.confirming || !hasSelection()) return false;
+        this.confirming = true;
+        return true;
     }
 
     /**
@@ -95,26 +90,8 @@ public class SelectCrateSession {
         this.currentPage = currentPage;
     }
 
-    /**
-     * @return whether the selected prize is visible on the current page
-     */
-    public boolean isSelectionOnCurrentPage() {
-        return this.selectedPage == this.currentPage;
-    }
-
-    /**
-     * @return true if a prize is currently selected
-     */
+    /** Returns whether at least one prize is selected. */
     public boolean hasSelection() {
-        return this.selectedPrize != null;
-    }
-
-    /**
-     * Clears the current selection.
-     */
-    public void clearSelection() {
-        this.selectedPrize = null;
-        this.selectedSlot = -1;
-        this.selectedPage = -1;
+        return !this.selectedPrizes.isEmpty();
     }
 }

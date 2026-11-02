@@ -1,10 +1,13 @@
 package com.badbones69.crazycrates.tasks.crates.types;
 
+import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.api.builders.CrateBuilder;
 import com.badbones69.crazycrates.api.objects.Crate;
 import com.badbones69.crazycrates.api.objects.Prize;
 import com.badbones69.crazycrates.api.objects.other.ItemBuilder;
+import com.badbones69.crazycrates.api.utils.ItemUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
+import com.badbones69.crazycrates.tasks.crates.other.SelectCrateInventory;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -14,11 +17,13 @@ import org.jspecify.annotations.NonNull;
 import us.crazycrew.crazycrates.api.enums.types.KeyType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * SelectCrate allows players to choose which prize they want to receive.
- * Players see all available prizes in a GUI and select one before confirming.
+ * Players select distinct prizes up to their key balance before confirming.
  */
 public class SelectCrate extends CrateBuilder {
 
@@ -60,7 +65,8 @@ public class SelectCrate extends CrateBuilder {
             return;
         }
 
-        renderPage(getInventory(), getPlayer(), getCrate(), 0, null);
+        renderPage(getInventory(), getPlayer(), getCrate(), 0, Set.of(),
+                getSelectionLimit(getPlayer(), getCrate(), type, checkHand));
 
         // Store the key type and hand check for later use
         this.plugin.getCrateManager().addPlayerKeyType(getPlayer(), type);
@@ -73,6 +79,18 @@ public class SelectCrate extends CrateBuilder {
     @Override
     public void run() {
         // No animation for SelectCrate
+    }
+
+    /** Returns the number of distinct prizes affordable with the opening key source. */
+    public static int getSelectionLimit(final Player player, final Crate crate, final KeyType type,
+                                        final boolean checkHand) {
+        if (type == null) return 0;
+        if (type == KeyType.free_key) return 1;
+        final int keys = type == KeyType.virtual_key
+                ? CrazyCrates.get().getUserManager().getVirtualKeys(player.getUniqueId(), crate.getName())
+                : new SelectCrateInventory(player.getInventory()).countKeys(
+                        item -> ItemUtils.isSimilar(item, crate), checkHand);
+        return Math.min(crate.getPrizes().size(), Math.max(0, keys) / Math.max(1, crate.getRequiredKeys()));
     }
 
     /**
@@ -91,7 +109,7 @@ public class SelectCrate extends CrateBuilder {
 
             if (lore.isEmpty()) {
                 lore = new ArrayList<>();
-                lore.add("&7Click to receive the selected prize.");
+                lore.add("&7Click to receive all selected prizes.");
             }
 
             builder.setMaterial(material)
@@ -101,7 +119,7 @@ public class SelectCrate extends CrateBuilder {
             // Default confirm button
             builder.setMaterial(Material.LIME_CONCRETE)
                     .setName(MsgUtils.color("&aConfirm Choice"))
-                    .setLore(List.of(MsgUtils.color("&7Click to receive the selected prize.")));
+                    .setLore(List.of(MsgUtils.color("&7Click to receive all selected prizes.")));
         }
 
         return builder;
@@ -114,10 +132,11 @@ public class SelectCrate extends CrateBuilder {
      * @param player       player viewing the prizes
      * @param crate        crate whose prizes should be rendered
      * @param page         zero-based page index
-     * @param selectedPrize prize selected by the player, or {@code null} when none is selected
+     * @param selectedPrizes prizes selected by the player
+     * @param limit current number of affordable selections
      */
     public static void renderPage(final @NonNull Inventory inventory, final @NonNull Player player,
-                                  final @NonNull Crate crate, final int page, final Prize selectedPrize) {
+                                  final @NonNull Crate crate, final int page, final Set<Prize> selectedPrizes, final int limit) {
         final FileConfiguration file = crate.getFile();
         final int prizesPerPage = getPrizesPerPage(inventory.getSize());
         final int pageCount = getPageCount(crate, inventory.getSize());
@@ -132,29 +151,62 @@ public class SelectCrate extends CrateBuilder {
         for (int prizeIndex = firstPrize; prizeIndex < lastPrize; prizeIndex++) {
             final Prize prize = prizes.get(prizeIndex);
             final int slot = prizeIndex - firstPrize;
-            final ItemStack item = prize == selectedPrize
+            final ItemStack item = selectedPrizes.contains(prize)
                     ? getSelectionMarker(file).build()
                     : prize.getDisplayItem(player);
+            if (!selectedPrizes.contains(prize) && selectedPrizes.size() >= limit) {
+                item.editMeta(meta -> {
+                    final List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add(message(crate, "Unavailable", "&cLimite atingido. Desmarque outro produto."));
+                    meta.setLore(lore);
+                });
+            }
             inventory.setItem(slot, item);
         }
 
         addGlass(inventory, file);
 
-        final int confirmSlot = file != null
-                ? file.getInt("Crate.SelectCrate.Confirm.Slot", DEFAULT_CONFIRM_SLOT)
-                : DEFAULT_CONFIRM_SLOT;
-        setItemIfValid(inventory, confirmSlot, getConfirmButton(file).build());
+        final int confirmSlot = getControlSlot(crate, inventory.getSize(), "Confirm");
+        final String counter = message(crate, "Counter", "&eSelecionados: %selected%/%limit%")
+                .replace("%selected%", Integer.toString(selectedPrizes.size()))
+                .replace("%limit%", Integer.toString(limit));
+        setItemIfValid(inventory, confirmSlot, getConfirmButton(file).addLore(counter).build());
+        final int cancelSlot = getControlSlot(crate, inventory.getSize(), "Cancel");
+        setItemIfValid(inventory, cancelSlot, new ItemBuilder().setMaterial(Material.BARRIER)
+                .setName(message(crate, "Cancel", "&cCancelar")).build());
 
         if (pageCount > 1) {
-            final int previousSlot = file != null
-                    ? file.getInt("Crate.SelectCrate.Navigation.Previous.Slot", DEFAULT_PREVIOUS_PAGE_SLOT)
-                    : DEFAULT_PREVIOUS_PAGE_SLOT;
-            final int nextSlot = file != null
-                    ? file.getInt("Crate.SelectCrate.Navigation.Next.Slot", DEFAULT_NEXT_PAGE_SLOT)
-                    : DEFAULT_NEXT_PAGE_SLOT;
+            final int previousSlot = getControlSlot(crate, inventory.getSize(), "Navigation.Previous");
+            final int nextSlot = getControlSlot(crate, inventory.getSize(), "Navigation.Next");
             setItemIfValid(inventory, previousSlot, getNavigationButton(file, false, safePage, pageCount).build());
             setItemIfValid(inventory, nextSlot, getNavigationButton(file, true, safePage, pageCount).build());
         }
+    }
+
+    /** Keeps controls distinct and outside prize slots, also for smaller inventories. */
+    public static int getControlSlot(final Crate crate, final int size, final String control) {
+        final String[] controls = {"Confirm", "Navigation.Previous", "Navigation.Next", "Cancel"};
+        final int[] defaults = {size - 5, size - 6, size - 4, size - 1};
+        final Set<Integer> used = new HashSet<>();
+        for (int index = 0; index < controls.length; index++) {
+            int slot = crate.getFile() == null ? defaults[index]
+                    : crate.getFile().getInt("Crate.SelectCrate." + controls[index] + ".Slot", defaults[index]);
+            if (slot < getPrizesPerPage(size) || slot >= size || used.contains(slot)) {
+                slot = defaults[index];
+                while (slot < getPrizesPerPage(size) || used.contains(slot)) {
+                    slot = (slot + 1) % size;
+                }
+            }
+            if (controls[index].equals(control)) return slot;
+            used.add(slot);
+        }
+        throw new IllegalArgumentException("Unknown SelectCrate control: " + control);
+    }
+
+    /** Resolves a configurable SelectCrate message using the existing color pipeline. */
+    public static String message(final Crate crate, final String key, final String fallback) {
+        return MsgUtils.color(crate.getFile() == null ? fallback
+                : crate.getFile().getString("Crate.SelectCrate.Messages." + key, fallback));
     }
 
     /**
@@ -175,7 +227,7 @@ public class SelectCrate extends CrateBuilder {
      * @param inventorySize size of the selection inventory
      * @return number of slots available for prizes
      */
-    private static int getPrizesPerPage(final int inventorySize) {
+    public static int getPrizesPerPage(final int inventorySize) {
         return Math.max(1, inventorySize - 9);
     }
 
