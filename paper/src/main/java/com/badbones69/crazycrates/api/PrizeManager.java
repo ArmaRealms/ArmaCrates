@@ -115,6 +115,16 @@ public class PrizeManager {
                     .replaceAll("%crate%", quoteReplacement(crate.getCrateInventoryName())));
         }
 
+        final String broadcastMessage = crate.getFile().getString("Crate.BroadCast", "");
+        // Alternative rewards can refund keys and must not announce the original prize.
+        if (crate.getFile().getBoolean("Crate.OpeningBroadCast")
+                && isPrizeBroadcast(broadcastMessage) && crate.getPrizes().contains(prize)) {
+            final String broadcast = formatMessage(player, prize, crate, broadcastMessage);
+            for (final Player recipient : CrazyCrates.get().getServer().getOnlinePlayers()) {
+                MsgUtils.sendMessage(recipient, broadcast, false);
+            }
+        }
+
         if (!crate.getPrizeMessage().isEmpty() && prize.getMessages().isEmpty()) {
             for (final String message : crate.getPrizeMessage()) {
                 sendMessage(player, prize, crate, message);
@@ -128,19 +138,30 @@ public class PrizeManager {
         }
     }
 
+    /** Returns whether a broadcast must wait until the chosen prize is delivered. */
+    public static boolean isPrizeBroadcast(final String message) {
+        return message.contains("%reward%") || message.contains("%prize%");
+    }
+
     private static void sendMessage(final Player player, final Prize prize, final Crate crate, final String message) {
+        MsgUtils.sendMessage(player, formatMessage(player, prize, crate, message), false);
+    }
+
+    private static String formatMessage(final Player player, final Prize prize, final Crate crate, final String message) {
         final String display = prize.getDisplayItemBuilder().getName();
 
         final String name = display == null || display.isEmpty() ? MsgUtils.color(prize.getDisplayItemBuilder().getMaterial().getKey().getKey().toUpperCase(Locale.ROOT).replaceAll("_", " ")) : display;
 
         final String defaultMessage = message
+                .replace("%prefix%", MsgUtils.getPrefix())
+                .replace("%Prefix%", MsgUtils.getPrefix())
                 .replaceAll("%player%", quoteReplacement(player.getName()))
                 .replaceAll("%Player%", quoteReplacement(player.getName()))
                 .replaceAll("%reward%", quoteReplacement(name))
                 .replaceAll("%prize%", quoteReplacement(name))
                 .replaceAll("%crate%", quoteReplacement(crate.getCrateInventoryName()));
 
-        MsgUtils.sendMessage(player, MiscUtils.isPapiActive() ? PlaceholderAPI.setPlaceholders(player, defaultMessage) : defaultMessage, false);
+        return MiscUtils.isPapiActive() ? PlaceholderAPI.setPlaceholders(player, defaultMessage) : defaultMessage;
     }
 
     /**

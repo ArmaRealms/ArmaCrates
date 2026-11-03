@@ -76,6 +76,33 @@ A list of things necessary to make sure you can build CrazyCrates properly.
    ./gradlew clean assemble
    ```
 
+## Prize broadcasts
+
+Reuse the existing broadcast keys once per crate, without commands on each prize:
+
+```yaml
+Crate:
+  OpeningBroadCast: true
+  BroadCast: '&8[&dCaixa&8] &e%player% &aresgatou &f[%reward%&f]&a!'
+```
+
+When `BroadCast` contains `%reward%` or `%prize%`, the announcement waits for the
+prize delivery and is sent once per prize to all online players. Without either
+placeholder, the message keeps its existing behavior and is sent on opening.
+`OpeningBroadCast: false` disables both forms of announcement.
+
+Reward messages support `%prefix%` / `%Prefix%`, `%player%` / `%Player%`,
+`%reward%` / `%prize%` and `%crate%`. The name comes from the display item,
+including Oraxen items, with the material name as fallback. PlaceholderAPI is
+optional; when installed, placeholders are resolved for the winner before sending
+one message to everyone. Legacy and hex colors are supported.
+
+Private `Crate.Prize-Message` and prize `Messages` remain separate. Alternative
+rewards such as key refunds are not announced. Remove old broadcast commands
+from prize `Commands` before enabling native announcements to avoid duplicates.
+External delivery commands retain their existing failure limits; the plugin
+cannot verify whether another plugin actually delivered their reward.
+
 ## Roadmap
 
 Check our public [trello board](https://trello.com/b/bzQ5TwXo) for our current plans, any bugs and general tracking of

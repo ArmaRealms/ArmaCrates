@@ -17,10 +17,10 @@ Crate:
   InGUI: true
   # Slot the item is in the GUI.
   Slot: 14
-  # Enables/Disables the Broadcasts message when they open a crate.
+  # Enables/Disables the broadcast. Reward placeholders delay it until prize delivery.
   OpeningBroadCast: true
-  # Message that is broadcast when opening the crate.
-  BroadCast: '%prefix%&6&l%player%&r &7is choosing a prize from the &6&lSelect Crate.'
+  # With %reward% or %prize%, announce each redeemed prize instead of the opening.
+  BroadCast: '%prefix%&6%player% &7received &r%reward% &7from &6%crate%&7.'
   # SelectCrate specific configuration
   SelectCrate:
     # Maximum distinct prizes selected per confirmation. Omitted: 5. Minimum: 1.

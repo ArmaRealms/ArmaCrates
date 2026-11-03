@@ -4,6 +4,8 @@
 
 ### Adicionado
 
+- Anúncio de resgate nativo reutiliza `Crate.BroadCast` e `Crate.OpeningBroadCast`: textos com `%reward%` ou `%prize%` são enviados após a entrega, com placeholders do vencedor, sem comandos por prêmio. Textos de abertura mantêm o comportamento anterior; devoluções por recompensa alternativa não anunciam o prêmio original.
+
 - Limite configurável de prêmios simultâneos em `Crate.SelectCrate.MaxSelections`, com padrão 5, contador e revalidação na confirmação.
 
 - SelectCrate aceita `RequiredKeys` por prêmio, com prioridade sobre o custo global e cobrança da soma das escolhas. A interface mostra os custos individuais e o orçamento total.

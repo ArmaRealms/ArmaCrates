@@ -2,6 +2,7 @@ package com.badbones69.crazycrates.listeners.crates;
 
 import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.CrazyHandler;
+import com.badbones69.crazycrates.api.PrizeManager;
 import com.badbones69.crazycrates.api.enums.Messages;
 import com.badbones69.crazycrates.api.events.CrateOpenEvent;
 import com.badbones69.crazycrates.api.objects.Crate;
@@ -62,7 +63,7 @@ public class CrateOpenListener implements Listener {
             String broadcastMessage = configuration.getString("Crate.BroadCast", "");
             boolean broadcastToggle = configuration.contains("Crate.OpeningBroadCast") && configuration.getBoolean("Crate.OpeningBroadCast");
 
-            if (broadcastToggle && (!broadcastMessage.isBlank())) {
+            if (broadcastToggle && !broadcastMessage.isBlank() && !PrizeManager.isPrizeBroadcast(broadcastMessage)) {
                 //noinspection deprecation
                 this.plugin.getServer().broadcastMessage(MsgUtils.color(broadcastMessage.replaceAll("%prefix%", MsgUtils.getPrefix())).replaceAll("%player%", player.getName()));
             }

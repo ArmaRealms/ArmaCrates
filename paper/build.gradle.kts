@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.nbtapi)
     compileOnly(libs.decentholograms)
     compileOnly(libs.placeholderapi)
+    testImplementation(libs.placeholderapi) { isTransitive = false }
     compileOnly(libs.oraxen)
     compileOnly(fileTree("libs").include("*.jar"))
 }
