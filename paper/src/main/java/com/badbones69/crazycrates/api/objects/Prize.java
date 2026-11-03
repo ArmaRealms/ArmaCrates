@@ -94,6 +94,11 @@ public class Prize {
         this.section = section;
     }
 
+    /** Returns this prize's key cost, falling back to the crate cost when omitted. */
+    public int getRequiredKeys(final int crateRequiredKeys) {
+        return Math.max(1, this.section.getInt("RequiredKeys", crateRequiredKeys));
+    }
+
     /**
      * @return the name of the prize.
      */

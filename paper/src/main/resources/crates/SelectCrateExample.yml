@@ -8,7 +8,7 @@ Crate:
   Preview-Name: '&6Select Crate Preview'
   # Starting amount of keys when the player 1st joins.
   StartingKeys: 0
-  # The amount of keys required to use the crate.
+  # Default key cost per selected prize. A prize-level RequiredKeys overrides this value.
   # Keys are consumed only when the player confirms their selection.
   RequiredKeys: 1
   # Max amount of crates that can be opened at once using /cc mass-open
@@ -23,6 +23,9 @@ Crate:
   BroadCast: '%prefix%&6&l%player%&r &7is choosing a prize from the &6&lSelect Crate.'
   # SelectCrate specific configuration
   SelectCrate:
+    # Maximum distinct prizes selected per confirmation. Omitted: 5. Minimum: 1.
+    # The combined key cost must also fit the player's balance.
+    MaxSelections: 5
     GUI:
       # Size of the selection GUI (must be a multiple of 9, max 54)
       Size: 54
@@ -75,10 +78,12 @@ Crate:
     Messages:
       # Message shown when player tries to confirm without selecting a prize
       NoSelection: '&cSelecione ao menos um produto antes de confirmar!'
-      Counter: '&eSelecionados: %selected%/%limit%'
+      Counter: '&eSelecionados: %selected%/%max% | Chaves: %cost%/%keys%'
       Cancel: '&cCancelar'
-      SelectionLimit: '&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro.'
-      Unavailable: '&cLimite atingido. Desmarque outro produto.'
+      SelectionLimit: '&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto.'
+      Unavailable: '&cSaldo insuficiente. Desmarque outro produto.'
+      PrizeCost: '&7Custo: %cost% chave(s).'
+      MaxSelections: '&cVocê pode selecionar no máximo %max% prêmios.'
       BlockedPrize: '&cVocê não pode selecionar este prêmio.'
       InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
       InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'
@@ -130,11 +135,13 @@ Crate:
       - '&6&lSelect Crate'
       - '&eChoose your prize!'
   # All the prizes that can be won from the Crate.
-  # Choose distinct prizes up to floor(keys / RequiredKeys), across all pages.
+  # Choose distinct prizes across pages while their combined key cost fits your balance.
   # Prefer Items (including or: custom items) for validated inventory delivery.
   # Commands run after delivery and cannot be checked for space or rolled back.
   Prizes:
     1:
+      # Optional override: this prize costs 2 keys even though the crate default is 1.
+      RequiredKeys: 2
       DisplayName: '&e&lDiamond Sword'
       DisplayItem: 'DIAMOND_SWORD'
       DisplayAmount: 1

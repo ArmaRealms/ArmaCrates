@@ -7,11 +7,11 @@ SelectCrate is a new crate type for CrazyCrates that allows players to **choose*
 
 1. **Opening the Crate**: When a player opens a SelectCrate (by right-clicking a physical crate or using `/crates open <crate>`), they are presented with a GUI showing all available prizes.
 
-2. **Selecting Prizes**: Click to select a reward and click its marker again to deselect it. Select up to `floor(available keys / max(1, RequiredKeys))` distinct rewards. With five keys and `RequiredKeys: 1`, select up to five rewards. Selections persist across pages. The confirmation button always shows the selected count and current limit. At the limit, unselected rewards show an unavailable notice.
+2. **Selecting Prizes**: Click to select a reward and click its marker again to deselect it. Select up to `Crate.SelectCrate.MaxSelections` distinct rewards (default 5), while their combined key cost fits the current balance. Each prize uses its own `RequiredKeys` when configured, otherwise the crate value. With five keys, rewards costing two and three keys can be selected together. Selections persist across pages. The confirmation button shows the selected count against the count cap, and the total required keys against the current balance. Each available prize shows its individual cost. At the limit, unselected rewards show an unavailable notice.
 
-3. **Confirming**: Click the confirmation button (default slot 49 in a 54-slot menu). The plugin revalidates the current crate, opening permission, selections, key balance and inventory. A changed prize list invalidates the displayed menu, including changes made before the first click. Each selected reward costs `max(1, RequiredKeys)` keys. Free openings allow one reward. The opening key source is preserved: physical and virtual keys are not combined. When opening from held keys, only the main hand and offhand count; other physical openings use storage and offhand.
+3. **Confirming**: Click the confirmation button (default slot 49 in a 54-slot menu). The plugin revalidates the current crate, opening permission, selections, key balance and inventory. A changed prize list invalidates the displayed menu, including changes made before the first click. The key debit equals the sum of the selected prize costs. A prize override takes precedence in both directions: crate cost 1/prize cost 2 charges 2; crate cost 2/prize cost 1 charges 1. Free openings allow one reward. The opening key source is preserved: physical and virtual keys are not combined. When opening from held keys, only the main hand and offhand count; other physical openings use storage and offhand.
 
-4. **Receiving Prizes**: All native reward items are built once. Blacklisted prizes cannot be selected, even if they define an alternative reward. The plugin prepares a detached inventory containing the exact key debit and all reward items, respecting stack sizes, quantities and item metadata. Armor and offhand are not reward storage. Slots freed by physical keys can receive rewards. If the whole batch cannot fit, nothing is consumed or delivered and the player sees: “Você não possui espaço suficiente no inventário para receber todos os produtos selecionados.”
+4. **Receiving Prizes**: All native reward items are built once. Blacklisted prizes cannot be selected, even if they define an alternative reward. The plugin prepares a detached inventory containing the exact key debit and all reward items, respecting stack sizes, quantities and item metadata. Opening a SelectCrate does not require an empty storage slot; the complete inventory check happens on confirmation. A full inventory can still accept compatible partial stacks or rewards without native items. Armor and offhand are not reward storage. Slots freed by physical keys can receive rewards. If the whole batch cannot fit, nothing is consumed or delivered and the player sees: “Você não possui espaço suficiente no inventário para receber todos os produtos selecionados.”
 
 5. **Canceling**: Click Cancel (default slot 53), close the inventory, or disconnect. No keys or rewards change. A confirmation queued before the menu closes is discarded. The session and open inventory are checked again after reward preparation, so an integration closing or replacing the menu cannot redeem the previous session. Repeated confirmation clicks can redeem the session only once.
 
@@ -32,6 +32,7 @@ Crate:
   RequiredKeys: 1
   
   SelectCrate:
+    MaxSelections: 5  # Maximum distinct rewards per confirmation; minimum 1.
     GUI:
       Size: 54  # Must be 9, 18, 27, 36, 45, or 54
       Title: '&6Select Your Prize!'
@@ -77,14 +78,18 @@ Crate:
 
     Messages:
       NoSelection: '&cSelecione ao menos um produto antes de confirmar!'
-      Counter: '&eSelecionados: %selected%/%limit%'
+      Counter: '&eSelecionados: %selected%/%max% | Chaves: %cost%/%keys%'
       Cancel: '&cCancelar'
-      SelectionLimit: '&cVocê atingiu o limite de seleções. Desmarque um produto para escolher outro.'
-      Unavailable: '&cLimite atingido. Desmarque outro produto.'
+      SelectionLimit: '&cVocê não possui chaves suficientes para esta seleção. Desmarque outro produto.'
+      Unavailable: '&cSaldo insuficiente. Desmarque outro produto.'
+      PrizeCost: '&7Custo: %cost% chave(s).'
+      MaxSelections: '&cVocê pode selecionar no máximo %max% prêmios.'
       BlockedPrize: '&cVocê não pode selecionar este prêmio.'
       InventoryFull: '&cVocê não possui espaço suficiente no inventário para receber todos os produtos selecionados.'
       InvalidReward: '&cNão foi possível preparar os produtos. Avise a equipe.'
 ```
+
+The Counter message supports `%selected%` (number of rewards), `%max%` (configured selection cap), `%cost%` (combined cost) and `%keys%` (available keys). `%limit%` remains accepted as an alias for the available key budget. Update existing custom Counter messages to use the cost placeholders when mixing prices. The cap defaults to 5 even in existing configurations that omit MaxSelections. Values below 1 use 1. Lowering the cap while a menu is open rejects confirmation until the player deselects enough rewards; nothing is charged or delivered. Explicit free openings still allow one choice and charge no keys.
 
 ### Prize Configuration
 
@@ -93,6 +98,7 @@ Prizes in SelectCrate work the same as other crate types, but MaxRange and Chanc
 ```yaml
   Prizes:
     1:
+      RequiredKeys: 2  # Overrides Crate.RequiredKeys, even if it is higher or lower.
       DisplayName: '&e&lDiamond Sword'
       DisplayItem: 'DIAMOND_SWORD'
       DisplayAmount: 1
@@ -131,7 +137,7 @@ Permissions are rechecked when clicking and confirming, including after item pre
 
 1. **GUI Size**: Reserve the bottom row (slots 45-53 in a 54-slot GUI) for controls. Prizes that do not fit are split into pages. Controls outside the reserved row or overlapping another control fall back to separate slots. A 9-slot menu has one prize slot.
 
-2. **Required Keys**: The configured cost applies to each selected reward. Zero and negative values retain the previous minimum cost of one key.
+2. **Required Keys**: A prize-level integer overrides `Crate.RequiredKeys`; omitting the field inherits the crate value. Zero and negative values retain the existing minimum of one key. Physical SelectCrate menus can open with a single accepted key, so cheaper overrides remain reachable; exact costs are enforced on selection and confirmation. Other crate types retain their existing opening checks.
 
 3. **No Random Selection**: Unlike other crate types, **all prizes are available** to choose from. The Chance and MaxRange values are ignored.
 

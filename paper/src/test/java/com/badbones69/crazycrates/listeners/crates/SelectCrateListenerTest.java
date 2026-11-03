@@ -15,6 +15,7 @@ import com.badbones69.crazycrates.tasks.crates.CrateManager;
 import com.badbones69.crazycrates.tasks.crates.types.SelectCrate;
 import org.bukkit.Material;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -75,10 +76,12 @@ class SelectCrateListenerTest {
         when(plugin.getUserManager()).thenReturn(users);
         when(plugin.getLogger()).thenReturn(Logger.getAnonymousLogger());
         when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_keys)).thenReturn("No keys");
+        when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.inventory_not_empty)).thenReturn("Inventory full");
+        when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.required_keys)).thenReturn("Insufficient keys");
         when(plugin.getCrazyHandler().getConfigManager().getMessages().getProperty(MessageKeys.no_crate_permission)).thenReturn("No permission");
         when(plugin.getCrazyHandler().getConfigManager().getConfig().getProperty(ConfigKeys.command_prefix)).thenReturn("");
         select = mockStatic(SelectCrate.class, CALLS_REAL_METHODS);
-        select.when(() -> SelectCrate.renderPage(any(), any(), any(), anyInt(), anySet(), anyInt())).thenAnswer(call -> null);
+        select.when(() -> SelectCrate.renderPage(any(), any(), any(), anyInt(), anySet(), anyInt(), anyBoolean())).thenAnswer(call -> null);
         delivery = mockStatic(PrizeManager.class);
         misc = mockStatic(MiscUtils.class);
         itemUtils = mockStatic(ItemUtils.class);
@@ -100,6 +103,7 @@ class SelectCrateListenerTest {
         when(crate.getRequiredKeys()).thenReturn(1);
         for (int i = 0; i < 6; i++) {
             final Prize prize = mock(Prize.class);
+            when(prize.getRequiredKeys(anyInt())).thenAnswer(call -> Math.max(1, (int) call.getArgument(0)));
             final ItemStack reward = item();
             when(prize.getItems()).thenReturn(List.of(reward));
             prizes.add(prize);
@@ -469,8 +473,121 @@ class SelectCrateListenerTest {
         click(0);
         when(prizes.get(0).hasPermission(player)).thenReturn(true);
         click(50);
-        select.verify(() -> SelectCrate.renderPage(top, player, crate, 1, java.util.Set.of(), 1));
+        select.verify(() -> SelectCrate.renderPage(top, player, crate, 1, java.util.Set.of(), 1, false));
         verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+    }
+
+    @Test void higherPrizeCostOverridesGlobalAndMixedChoicesDebitTheirSum() {
+        when(prizes.get(0).getRequiredKeys(anyInt())).thenReturn(2);
+        click(0);
+        click(1);
+        click(49);
+        tick();
+        verify(users).takeKeys(3, player.getUniqueId(), "select", KeyType.virtual_key, false);
+    }
+
+    @Test void cheaperPrizeOverridesGlobalEvenWhenBalanceIsBelowGlobal() {
+        when(crate.getRequiredKeys()).thenReturn(2);
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(1);
+        when(prizes.get(0).getRequiredKeys(anyInt())).thenReturn(1);
+        click(0);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+    }
+
+    @Test void individuallyExpensivePrizeCannotExceedRemainingBudget() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(2);
+        when(prizes.get(0).getRequiredKeys(anyInt())).thenReturn(2);
+        click(0);
+        click(1);
+        click(49);
+        tick();
+        verify(users).takeKeys(2, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void overrideCostIsRevalidatedWhenConfirmationRuns() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(1);
+        click(0);
+        click(49);
+        when(prizes.get(0).getRequiredKeys(anyInt())).thenReturn(2);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void physicalKeysPayThePrizeOverrideExactly() {
+        when(manager.getPlayerKeyType(player)).thenReturn(KeyType.physical_key);
+        when(key.getAmount()).thenReturn(2);
+        when(inventory.getStorageContents()).thenReturn(new ItemStack[]{key});
+        when(prizes.get(0).getRequiredKeys(anyInt())).thenReturn(2);
+        click(0);
+        click(49);
+        tick();
+        verify(inventory).setStorageContents(argThat(contents -> contents[0] == prizes.get(0).getItems().getFirst()));
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+    }
+
+    @Test void defaultCapPreventsSixthSelectionWithSufficientBalance() {
+        when(users.getVirtualKeys(player.getUniqueId(), "select")).thenReturn(100);
+        for (int slot = 0; slot < 6; slot++) click(slot);
+        click(49);
+        tick();
+        verify(users).takeKeys(5, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(5), crate), never());
+    }
+
+    @Test void capReducedBeforeConfirmationRejectsBatchUntilPlayerDeselects() {
+        final YamlConfiguration config = new YamlConfiguration();
+        when(crate.getFile()).thenReturn(config);
+        click(0);
+        click(1);
+        click(49);
+        config.set("Crate.SelectCrate.MaxSelections", 1);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        delivery.verifyNoInteractions();
+        click(0);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(1), crate));
+        delivery.verifyNoMoreInteractions();
+    }
+
+    @Test void capReducedDuringPreparationRejectsWholeBatch() {
+        final YamlConfiguration config = new YamlConfiguration();
+        when(crate.getFile()).thenReturn(config);
+        click(0);
+        click(1);
+        final List<ItemStack> rewards = prizes.get(0).getItems();
+        when(prizes.get(0).getItems()).thenAnswer(call -> {
+            config.set("Crate.SelectCrate.MaxSelections", 1);
+            return rewards;
+        });
+        click(49);
+        tick();
+        verify(users, never()).takeKeys(anyInt(), any(), anyString(), any(), anyBoolean());
+        verify(inventory, never()).setStorageContents(any());
+        delivery.verifyNoInteractions();
+    }
+
+    @Test void fullInventoryCanConfirmRewardWithoutNativeItems() {
+        final ItemStack[] full = new ItemStack[36];
+        java.util.Arrays.fill(full, item());
+        when(inventory.getStorageContents()).thenReturn(full);
+        when(prizes.get(0).getItems()).thenReturn(List.of());
+        click(0);
+        click(49);
+        tick();
+        verify(users).takeKeys(1, player.getUniqueId(), "select", KeyType.virtual_key, false);
+        delivery.verify(() -> PrizeManager.finishPrize(player, prizes.get(0), crate));
+        delivery.verifyNoMoreInteractions();
     }
 
 }

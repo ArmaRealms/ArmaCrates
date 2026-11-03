@@ -119,7 +119,7 @@ public class CrateControlListener implements Listener {
 
                     final int totalKeys = this.plugin.getCrazyHandler().getUserManager().getTotalKeys(player.getUniqueId(), crate.getName());
 
-                    if (requiredKeys > 0 && totalKeys < requiredKeys) {
+                    if (crate.getCrateType() != CrateType.select_crate && requiredKeys > 0 && totalKeys < requiredKeys) {
                         final HashMap<String, String> placeholders = new HashMap<>();
                         placeholders.put("%key-amount%", String.valueOf(requiredKeys));
                         placeholders.put("%crate%", crate.getPreviewName());
@@ -151,7 +151,7 @@ public class CrateControlListener implements Listener {
                             }
                         }
 
-                        if (MiscUtils.isInventoryFull(player)) {
+                        if (crate.getCrateType() != CrateType.select_crate && MiscUtils.isInventoryFull(player)) {
                             player.sendMessage(Messages.inventory_not_empty.getMessage(player));
                             return;
                         }

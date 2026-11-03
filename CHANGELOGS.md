@@ -4,6 +4,10 @@
 
 ### Adicionado
 
+- Limite configurável de prêmios simultâneos em `Crate.SelectCrate.MaxSelections`, com padrão 5, contador e revalidação na confirmação.
+
+- SelectCrate aceita `RequiredKeys` por prêmio, com prioridade sobre o custo global e cobrança da soma das escolhas. A interface mostra os custos individuais e o orçamento total.
+
 - SelectCrate bloqueia prêmios conforme `BlackListed-Permissions`, com ícone configurável em `SelectCrate.BlockedPrize` (`STRUCTURE_VOID` por padrão) e revalidação antes da entrega.
 
 - Seleção múltipla de prêmios no SelectCrate conforme o saldo de chaves e o custo por prêmio, com contador, desmarcação entre páginas e botão de cancelamento.
@@ -16,6 +20,10 @@
 - Comandos de recompensa são mantidos após a entrega de itens; os efeitos de plugins externos não oferecem validação de espaço nem reversão.
 
 ### Resolvido
+
+- A primeira construção de um item Oraxen/ItemEdit usa o item resolvido pela integração, evitando retornar o material de fallback na prévia ou entrega de prêmios.
+
+- A abertura do SelectCrate por caixa física, menu e comandos não exige um slot vazio; a confirmação continua validando se todos os itens cabem após o débito das chaves físicas.
 
 - Escolhas do SelectCrate que se tornam bloqueadas liberam o limite de seleção antes de novas escolhas ou navegação.
 - Cliques repetidos em Confirmar não resgatam automaticamente as escolhas restantes após um lote ser rejeitado pela blacklist.
