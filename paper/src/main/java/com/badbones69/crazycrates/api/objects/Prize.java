@@ -250,7 +250,6 @@ public class Prize {
         try {
             final String material = this.section.getString("DisplayItem", "RED_TERRACOTTA");
             final int amount = this.section.getInt("DisplayAmount", 1);
-            final List<String> lore = this.section.getStringList("Lore");
             final boolean isGlowing = this.section.getBoolean("Glowing", false);
             final boolean isUnbreakable = this.section.getBoolean("Unbreakable", false);
             final boolean hideItemFlags = this.section.getBoolean("HideItemFlags", false);
@@ -261,13 +260,14 @@ public class Prize {
             builder.setMaterial(material)
                     .setAmount(amount)
                     .setName(this.prizeName)
-                    .setLore(lore)
                     .setGlow(isGlowing)
                     .setUnbreakable(isUnbreakable)
                     .hideItemFlags(hideItemFlags)
                     .addItemFlags(itemFlags)
                     .addPatterns(patterns)
                     .setPlayerName(playerName);
+
+            if (this.section.contains("Lore")) builder.setLore(this.section.getStringList("Lore"));
 
             final NamespacedKey cratePrize = PersistentKeys.crate_prize.getNamespacedKey();
 

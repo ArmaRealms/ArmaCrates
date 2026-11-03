@@ -9,6 +9,9 @@ import com.badbones69.crazycrates.api.utils.ItemUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateInventory;
 import com.badbones69.crazycrates.tasks.crates.other.SelectCrateSession;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -164,16 +167,21 @@ public class SelectCrate extends CrateBuilder {
                     : prize.getDisplayItem(player);
             final int prizeCost = free ? 1 : prize.getRequiredKeys(crate.getRequiredKeys());
             item.editMeta(meta -> {
-                final List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                lore.add(message(crate, "PrizeCost", "&7Custo: %cost% chave(s).")
-                        .replace("%cost%", Integer.toString(free ? 0 : prizeCost)));
+                final List<Component> originalLore = meta.lore();
+                final List<Component> lore = originalLore == null ? new ArrayList<>() : new ArrayList<>(originalLore);
+                final LegacyComponentSerializer serializer = LegacyComponentSerializer.legacySection();
+                lore.add(serializer.deserialize(message(crate, "PrizeCost", "&7Custo: %cost% chave(s).")
+                        .replace("%cost%", Integer.toString(free ? 0 : prizeCost)))
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
                 if (!selectedPrizes.contains(prize) && selectedPrizes.size() >= maxSelections) {
-                    lore.add(message(crate, "MaxSelections", "&cVocê pode selecionar no máximo %max% prêmios.")
-                            .replace("%max%", Integer.toString(maxSelections)));
+                    lore.add(serializer.deserialize(message(crate, "MaxSelections", "&cVocê pode selecionar no máximo %max% prêmios.")
+                            .replace("%max%", Integer.toString(maxSelections)))
+                            .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
                 } else if (!selectedPrizes.contains(prize) && selectedCost + prizeCost > availableKeys) {
-                    lore.add(message(crate, "Unavailable", "&cSaldo insuficiente. Desmarque outro produto."));
+                    lore.add(serializer.deserialize(message(crate, "Unavailable", "&cSaldo insuficiente. Desmarque outro produto."))
+                            .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
                 }
-                meta.setLore(lore);
+                meta.lore(lore);
             });
             inventory.setItem(slot, item);
         }

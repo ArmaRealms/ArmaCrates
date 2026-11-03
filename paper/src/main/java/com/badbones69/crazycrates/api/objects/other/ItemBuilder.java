@@ -10,6 +10,8 @@ import de.tr7zw.changeme.nbtapi.NBTItem;
 import emanondev.itemedit.ItemEdit;
 import io.th0rgal.oraxen.api.OraxenItems;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
@@ -50,6 +52,9 @@ import java.util.logging.Level;
 
 public class ItemBuilder {
 
+    private static final LegacyComponentSerializer LEGACY_RGB = LegacyComponentSerializer.builder()
+            .character('§').hexColors().useUnusualXRepeatedCharacterHexFormat().build();
+
     private final NBTItem nbtItem;
     private final List<String> itemLore;
     // Entities
@@ -61,6 +66,9 @@ public class ItemBuilder {
     private TrimPattern trimPattern;
     private int damage;
     private String itemName;
+    private boolean overrideName;
+    private boolean overrideLore;
+    private boolean resolvedCustomItem;
     private int itemAmount;
     private String customMaterial;
     // Player
@@ -185,6 +193,8 @@ public class ItemBuilder {
         this.trimPattern = itemBuilder.trimPattern;
         this.damage = itemBuilder.damage;
         this.itemName = itemBuilder.itemName;
+        this.overrideName = itemBuilder.overrideName;
+        this.overrideLore = itemBuilder.overrideLore;
         this.itemLore = new ArrayList<>(itemBuilder.itemLore);
         this.itemAmount = itemBuilder.itemAmount;
         this.player = itemBuilder.player;
@@ -684,6 +694,7 @@ public class ItemBuilder {
     public ItemBuilder setName(final String itemName) {
         if (itemName != null) {
             this.itemName = itemName;
+            this.overrideName = !itemName.startsWith("or:") && !itemName.startsWith("ie:");
         }
 
         return this;
@@ -704,6 +715,7 @@ public class ItemBuilder {
      */
     public ItemBuilder setLore(final List<String> lore) {
         if (lore != null) {
+            this.overrideLore = true;
             this.itemLore.clear();
 
             for (final String line : lore) {
@@ -866,6 +878,7 @@ public class ItemBuilder {
     public ItemStack build() {
         if (this.nbtItem != null) this.itemStack = this.nbtItem.getItem();
 
+        this.resolvedCustomItem = false;
         setCustomItem();
         ItemStack item = this.itemStack;
         if (item.getType() != Material.AIR) {
@@ -888,8 +901,21 @@ public class ItemBuilder {
                 this.itemMeta = item.getItemMeta();
             }
 
-            this.itemMeta.setDisplayName(getUpdatedName());
-            this.itemMeta.setLore(getUpdatedLore());
+            if (this.resolvedCustomItem && !this.overrideName) {
+                this.itemMeta.customName(parse(this.itemMeta.customName(), this.namePlaceholders));
+                this.itemMeta.itemName(parse(this.itemMeta.itemName(), this.namePlaceholders));
+            } else {
+                this.itemMeta.setDisplayName(getUpdatedName());
+            }
+
+            if (this.resolvedCustomItem && !this.overrideLore) {
+                final List<Component> lore = this.itemMeta.lore();
+                if (lore != null) {
+                    this.itemMeta.lore(lore.stream().map(line -> parse(line, this.lorePlaceholders)).toList());
+                }
+            } else {
+                this.itemMeta.setLore(getUpdatedLore());
+            }
 
             if (isArmor() && (this.trimPattern != null && this.trimMaterial != null)) {
                 ((ArmorMeta) this.itemMeta).setTrim(new ArmorTrim(this.trimMaterial, this.trimPattern));
@@ -1030,7 +1056,11 @@ public class ItemBuilder {
         if (item != null) {
             this.itemStack = item;
             this.itemMeta = item.getItemMeta();
-            this.itemName = item.getItemMeta().getDisplayName();
+            this.resolvedCustomItem = true;
+            if (!this.overrideName) {
+                final Component name = this.itemMeta.customName() != null ? this.itemMeta.customName() : this.itemMeta.itemName();
+                this.itemName = name == null ? "" : LEGACY_RGB.serialize(name);
+            }
             this.enchantments = item.getEnchantments();
         }
     }
@@ -1066,6 +1096,24 @@ public class ItemBuilder {
         }
 
         return MsgUtils.color(value);
+    }
+
+    private Component parse(final Component value, final Map<String, String> placeholders) {
+        if (value == null) return null;
+
+        Component result = value;
+        for (final Map.Entry<String, String> entry : placeholders.entrySet()) {
+            final Component replacement = LEGACY_RGB.deserialize(parse(entry.getValue()));
+            result = result.replaceText(config -> config.matchLiteral(entry.getKey()).replacement(replacement))
+                    .replaceText(config -> config.matchLiteral(entry.getKey().toLowerCase()).replacement(replacement));
+        }
+
+        if (MiscUtils.isPapiActive() && this.target != null) {
+            result = result.replaceText(config -> config.match("%[^%]+%")
+                    .replacement((match, builder) -> LEGACY_RGB.deserialize(parse(match.group()))));
+        }
+
+        return result;
     }
 
     /**
@@ -1109,6 +1157,7 @@ public class ItemBuilder {
      */
     public ItemBuilder setLore(final Player player, final List<String> lore) {
         if (lore != null) {
+            this.overrideLore = true;
             this.itemLore.clear();
 
             for (final String line : lore) {
@@ -1126,7 +1175,10 @@ public class ItemBuilder {
      * @return the ItemBuilder with updated info.
      */
     public ItemBuilder addLore(final String lore) {
-        if (lore != null) this.itemLore.add(MsgUtils.color(lore));
+        if (lore != null) {
+            this.overrideLore = true;
+            this.itemLore.add(MsgUtils.color(lore));
+        }
         return this;
     }
 
