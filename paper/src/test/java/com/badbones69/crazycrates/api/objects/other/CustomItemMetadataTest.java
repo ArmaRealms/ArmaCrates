@@ -55,6 +55,7 @@ class CustomItemMetadataTest {
         messages = mockStatic(MsgUtils.class);
         messages.when(() -> MsgUtils.color(anyString())).thenAnswer(call -> call.getArgument(0));
         stacks = mockConstruction(ItemStack.class, (item, context) -> {
+            when(item.clone()).thenReturn(item);
             when(item.getType()).thenReturn((Material) context.arguments().getFirst());
             when(item.getItemMeta()).thenReturn(mock(ItemMeta.class));
         });
@@ -62,6 +63,8 @@ class CustomItemMetadataTest {
                 when(item.getItem()).thenReturn((ItemStack) context.arguments().getFirst()));
         meta = mock(ItemMeta.class);
         providerItem = mock(ItemStack.class);
+        when(providerItem.clone()).thenReturn(providerItem);
+        when(meta.clone()).thenReturn(meta);
         when(providerItem.getType()).thenReturn(Material.BOW);
         when(providerItem.getItemMeta()).thenReturn(meta);
         when(providerItem.getEnchantments()).thenReturn(Map.of());
@@ -96,6 +99,51 @@ class CustomItemMetadataTest {
         doAnswer(call -> { update.invoke(builder, providerItem); return null; }).when(builder).setCustomItem();
     }
 
+    @Test void explicitEnchantmentsSurviveProviderResolution() throws Exception {
+        final Enchantment enchantment = mock(Enchantment.class);
+        final ItemBuilder builder = builder().addEnchantments(enchantment, 7);
+        builder.build();
+        builder.build();
+        verify(providerItem, times(2)).addUnsafeEnchantments(Map.of(enchantment, 7));
+    }
+
+    @Test void providerUnbreakableIsPreservedUnlessExplicitlyOverridden() throws Exception {
+        builder().build();
+        verify(meta, never()).setUnbreakable(anyBoolean());
+        builder().setUnbreakable(false).build();
+        verify(meta).setUnbreakable(false);
+    }
+
+    @Test void resolvedMaterialUpdatesTypeState() throws Exception {
+        when(providerItem.getType()).thenReturn(Material.SHIELD);
+        final ItemBuilder builder = builder();
+        builder.build();
+        assertEquals(Material.SHIELD, builder.getMaterial());
+        assertTrue(builder.isShield());
+        builder.setMaterial(Material.STONE);
+        assertFalse(builder.isShield());
+    }
+
+    @Test void parserKeepsOptionNamesInsideValues() {
+        assertEquals("name_tag", ItemBuilder.convertString("name:name_tag").getName());
+        assertEquals("a:b:name", ItemBuilder.convertString("name:a:b:name").getName());
+    }
+
+    @Test void copiesOwnTheirStackAndMetadata() {
+        final ItemBuilder original = new ItemBuilder().setMaterial(Material.BOW);
+        final ItemStack source = stacks.constructed().getLast();
+        final ItemStack copyStack = mock(ItemStack.class);
+        final ItemMeta copyMeta = mock(ItemMeta.class);
+        when(source.clone()).thenReturn(copyStack);
+        when(source.getItemMeta().clone()).thenReturn(copyMeta);
+        when(copyStack.getType()).thenReturn(Material.BOW);
+        final ItemBuilder copy = new ItemBuilder(original).setAmount(3);
+        assertSame(copyStack, copy.build());
+        verify(copyStack).setAmount(3);
+        verify(copyStack).setItemMeta(copyMeta);
+        verify(source, never()).setAmount(anyInt());
+    }
+
     @Test void nativeDeliveryRetainsRichNamesAndLore() throws Exception {
         final ItemBuilder builder = builder();
         assertSame(providerItem, builder.build());
@@ -119,7 +167,7 @@ class CustomItemMetadataTest {
         final var order = inOrder(meta, providerItem);
         order.verify(meta).setEnchantmentGlintOverride(true);
         order.verify(providerItem).setItemMeta(meta);
-        order.verify(providerItem).addUnsafeEnchantments(enchantments);
+        order.verify(providerItem).addUnsafeEnchantments(Map.of());
         verify(providerItem, times(1)).setItemMeta(meta);
     }
 

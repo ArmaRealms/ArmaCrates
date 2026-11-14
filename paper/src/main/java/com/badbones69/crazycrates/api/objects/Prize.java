@@ -261,11 +261,12 @@ public class Prize {
                     .setAmount(amount)
                     .setName(this.prizeName)
                     .setGlow(isGlowing)
-                    .setUnbreakable(isUnbreakable)
                     .hideItemFlags(hideItemFlags)
                     .addItemFlags(itemFlags)
                     .addPatterns(patterns)
                     .setPlayerName(playerName);
+
+            if (this.section.contains("Unbreakable")) builder.setUnbreakable(isUnbreakable);
 
             if (this.section.contains("Lore")) builder.setLore(this.section.getStringList("Lore"));
 
