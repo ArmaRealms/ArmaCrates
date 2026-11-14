@@ -46,9 +46,10 @@ class CustomItemMetadataTest {
 
     @BeforeEach void setUp() {
         registries = mockStatic(RegistryAccess.class);
-        final RegistryAccess access = mock(RegistryAccess.class);
+        final RegistryAccess access = mock(RegistryAccess.class, RETURNS_MOCKS);
         registries.when(RegistryAccess::registryAccess).thenReturn(access);
-        when(access.getRegistry(any(RegistryKey.class))).thenReturn(mock(Registry.class));
+        final Registry<?> registry = mock(Registry.class);
+        doReturn(registry).when(access).getRegistry(any(RegistryKey.class));
         plugin = mockStatic(CrazyCrates.class);
         misc = mockStatic(MiscUtils.class);
         messages = mockStatic(MsgUtils.class);
