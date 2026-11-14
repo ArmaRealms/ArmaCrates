@@ -23,6 +23,8 @@
 
 ### Resolvido
 
+- `Glowing: true` usa o brilho nativo do Paper sem adicionar encantamentos artificiais nem ocultar os encantamentos reais dos itens Oraxen/ItemEdit. `HideItemFlags` e `Flags` explícitos continuam sendo respeitados.
+
 - Integração Oraxen/ItemEdit preserva os componentes originais do nome e da lore na entrega e na prévia, incluindo fontes, degradês e decorações; substituições explícitas da caixa continuam sendo aplicadas. O SelectCrate mantém a lore formatada ao acrescentar o custo e os avisos de seleção.
 
 - A primeira construção de um item Oraxen/ItemEdit usa o item resolvido pela integração, evitando retornar o material de fallback na prévia ou entrega de prêmios.

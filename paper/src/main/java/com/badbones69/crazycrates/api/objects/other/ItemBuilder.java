@@ -980,11 +980,12 @@ public class ItemBuilder {
 
             if (this.useCustomModelData) this.itemMeta.setCustomModelData(this.customModelData);
 
+            if (this.glowing) this.itemMeta.setEnchantmentGlintOverride(true);
+
             this.itemFlags.forEach(this.itemMeta::addItemFlags);
             item.setItemMeta(this.itemMeta);
             hideItemFlags();
             item.addUnsafeEnchantments(this.enchantments);
-            addGlow();
 
             final NBTItem nbt = new NBTItem(item);
 
@@ -1412,20 +1413,6 @@ public class ItemBuilder {
     public ItemBuilder setGlow(final boolean glow) {
         this.glowing = glow;
         return this;
-    }
-
-    /**
-     * Add glow to an item.
-     */
-    private void addGlow() {
-        if (this.glowing) {
-            try {
-                this.itemMeta.addEnchant(Enchantment.LUCK_OF_THE_SEA, 1, false);
-                this.itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                this.itemStack.setItemMeta(this.itemMeta);
-            } catch (final NoClassDefFoundError ignored) {
-            }
-        }
     }
 
     /**

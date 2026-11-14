@@ -4,6 +4,7 @@ import com.badbones69.crazycrates.CrazyCrates;
 import com.badbones69.crazycrates.api.utils.MiscUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import de.tr7zw.changeme.nbtapi.NBTItem;
+import io.papermc.paper.registry.RegistryAccess;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -12,7 +13,10 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
+import org.bukkit.Registry;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CustomItemMetadataTest {
+    private MockedStatic<RegistryAccess> registries;
     private MockedStatic<CrazyCrates> plugin;
     private MockedStatic<MiscUtils> misc;
     private MockedStatic<MsgUtils> messages;
@@ -39,6 +44,10 @@ class CustomItemMetadataTest {
     private List<Component> lore;
 
     @BeforeEach void setUp() {
+        registries = mockStatic(RegistryAccess.class);
+        final RegistryAccess access = mock(RegistryAccess.class);
+        registries.when(RegistryAccess::registryAccess).thenReturn(access);
+        when(access.getRegistry(any())).thenReturn(mock(Registry.class));
         plugin = mockStatic(CrazyCrates.class);
         misc = mockStatic(MiscUtils.class);
         messages = mockStatic(MsgUtils.class);
@@ -69,6 +78,7 @@ class CustomItemMetadataTest {
         messages.close();
         misc.close();
         plugin.close();
+        registries.close();
     }
 
     private ItemBuilder builder() throws Exception {
@@ -93,6 +103,53 @@ class CustomItemMetadataTest {
         verify(meta, never()).setDisplayName(any());
         verify(meta, never()).setLore(any());
         assertTrue(builder.getName().contains("§x"), "Text-only announcements must also retain RGB colors");
+    }
+
+    @Test void glowingCustomItemKeepsItsEnchantmentsVisible() throws Exception {
+        final Enchantment enchantment = mock(Enchantment.class);
+        final Map<Enchantment, Integer> enchantments = Map.of(enchantment, 5);
+        when(providerItem.getEnchantments()).thenReturn(enchantments);
+
+        assertSame(providerItem, builder().setGlow(true).build());
+
+        verify(meta, never()).addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        verify(meta, never()).addEnchant(any(), anyInt(), anyBoolean());
+        final var order = inOrder(meta, providerItem);
+        order.verify(meta).setEnchantmentGlintOverride(true);
+        order.verify(providerItem).setItemMeta(meta);
+        order.verify(providerItem).addUnsafeEnchantments(enchantments);
+        verify(providerItem, times(1)).setItemMeta(meta);
+    }
+
+    @Test void glowingUnenchantedItemDoesNotGainAFakeEnchantment() {
+        final ItemBuilder builder = new ItemBuilder().setMaterial(Material.TRIPWIRE_HOOK).setGlow(true);
+        final ItemStack item = stacks.constructed().getLast();
+        final ItemMeta itemMeta = item.getItemMeta();
+
+        assertSame(item, builder.build());
+
+        verify(itemMeta).setEnchantmentGlintOverride(true);
+        verify(itemMeta, never()).addEnchant(any(), anyInt(), anyBoolean());
+        verify(itemMeta, never()).addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        verify(item).addUnsafeEnchantments(Map.of());
+    }
+
+    @Test void disabledGlowPreservesTheProvidersGlintSetting() throws Exception {
+        builder().setGlow(false).build();
+        verify(meta, never()).setEnchantmentGlintOverride(any());
+        verify(meta, never()).addItemFlags(ItemFlag.HIDE_ENCHANTS);
+    }
+
+    @Test void glowingItemStillHonorsExplicitHiddenEnchantments() throws Exception {
+        builder().setGlow(true).addItemFlag(ItemFlag.HIDE_ENCHANTS).build();
+        verify(meta).addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        verify(meta, never()).removeItemFlags(any(ItemFlag[].class));
+    }
+
+    @Test void glowingItemStillHonorsHideAllFlags() throws Exception {
+        builder().setGlow(true).hideItemFlags(true).build();
+        verify(meta).addItemFlags(ItemFlag.values());
+        verify(meta, never()).removeItemFlags(any(ItemFlag[].class));
     }
 
     @Test void previewReferenceRetainsNameAndAllowsItsOwnLore() throws Exception {
