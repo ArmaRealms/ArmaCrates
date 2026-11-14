@@ -5,6 +5,7 @@ import com.badbones69.crazycrates.api.utils.MiscUtils;
 import com.badbones69.crazycrates.api.utils.MsgUtils;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -47,7 +48,7 @@ class CustomItemMetadataTest {
         registries = mockStatic(RegistryAccess.class);
         final RegistryAccess access = mock(RegistryAccess.class);
         registries.when(RegistryAccess::registryAccess).thenReturn(access);
-        when(access.getRegistry(any())).thenReturn(mock(Registry.class));
+        when(access.getRegistry(any(RegistryKey.class))).thenReturn(mock(Registry.class));
         plugin = mockStatic(CrazyCrates.class);
         misc = mockStatic(MiscUtils.class);
         messages = mockStatic(MsgUtils.class);
