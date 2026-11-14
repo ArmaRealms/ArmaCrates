@@ -81,6 +81,7 @@ public class ItemBuilder {
     private boolean isHead;
     // Enchantments/Flags
     private boolean unbreakable;
+    private boolean overrideUnbreakable;
     private boolean hideItemFlags;
     private boolean glowing;
     private EntityType entityType;
@@ -169,7 +170,7 @@ public class ItemBuilder {
         this.patterns = new ArrayList<>();
 
         this.isMap = false;
-        this.mapColor = Color.RED;
+        this.mapColor = null;
 
         this.namePlaceholders = new HashMap<>();
         this.lorePlaceholders = new HashMap<>();
@@ -186,8 +187,8 @@ public class ItemBuilder {
         this.target = itemBuilder.target;
 
         this.nbtItem = itemBuilder.nbtItem;
-        this.itemStack = itemBuilder.itemStack;
-        this.itemMeta = itemBuilder.itemMeta;
+        this.itemStack = itemBuilder.itemStack == null ? null : itemBuilder.itemStack.clone();
+        this.itemMeta = itemBuilder.itemMeta == null ? null : itemBuilder.itemMeta.clone();
         this.material = itemBuilder.material;
         this.trimMaterial = itemBuilder.trimMaterial;
         this.trimPattern = itemBuilder.trimPattern;
@@ -212,6 +213,7 @@ public class ItemBuilder {
         this.isHead = itemBuilder.isHead;
 
         this.unbreakable = itemBuilder.unbreakable;
+        this.overrideUnbreakable = itemBuilder.overrideUnbreakable;
         this.hideItemFlags = itemBuilder.hideItemFlags;
         this.glowing = itemBuilder.glowing;
 
@@ -265,7 +267,7 @@ public class ItemBuilder {
             if (itemMeta.hasDisplayName()) itemBuilder.setName(itemMeta.getDisplayName());
             if (itemMeta.hasLore()) itemBuilder.setLore(itemMeta.getLore());
 
-            itemMeta.setUnbreakable(itemMeta.isUnbreakable());
+            itemBuilder.setUnbreakable(itemMeta.isUnbreakable());
 
             if (itemMeta instanceof final Damageable damageable) itemBuilder.setDamage(damageable.getDamage());
         }
@@ -294,8 +296,9 @@ public class ItemBuilder {
         final ItemBuilder itemBuilder = new ItemBuilder();
         try {
             for (final String optionString : itemString.split(", ")) {
-                final String option = optionString.split(":")[0];
-                final String value = optionString.replace(option + ":", "").replace(option, "");
+                final String[] parts = optionString.split(":", 2);
+                final String option = parts[0];
+                final String value = parts.length == 2 ? parts[1] : "";
 
                 switch (option.toLowerCase()) {
                     case "item" -> itemBuilder.setMaterial(value);
@@ -317,7 +320,7 @@ public class ItemBuilder {
                     case "lore" -> itemBuilder.setLore(Arrays.asList(value.split(",")));
                     case "player" -> itemBuilder.setPlayerName(value);
                     case "unbreakable-item" -> {
-                        if (value.isEmpty() || value.equalsIgnoreCase("true")) itemBuilder.setUnbreakable(true);
+                        itemBuilder.setUnbreakable(value.isEmpty() || Boolean.parseBoolean(value));
                     }
                     case "trim-pattern" -> {
                         if (!value.isEmpty())
@@ -518,12 +521,13 @@ public class ItemBuilder {
      * @return the ItemBuilder with updated info.
      */
     public ItemBuilder setMaterial(final Material material) {
+        this.customMaterial = null;
         this.material = material;
 
         this.itemStack = new ItemStack(this.material);
         this.itemMeta = this.itemStack.getItemMeta();
 
-        this.isHead = material == Material.PLAYER_HEAD;
+        updateMaterialState(material);
 
         return this;
     }
@@ -586,21 +590,20 @@ public class ItemBuilder {
             this.itemMeta = this.itemStack.getItemMeta();
         }
 
-        switch (this.material.name()) {
-            case "PLAYER_HEAD" -> this.isHead = true;
-            case "POTION", "SPLASH_POTION" -> this.isPotion = true;
-            case "LEATHER_HELMET", "LEATHER_CHESTPLATE", "LEATHER_LEGGINGS", "LEATHER_BOOTS", "LEATHER_HORSE_ARMOR" ->
-                    this.isLeatherArmor = true;
-            case "BANNER" -> this.isBanner = true;
-            case "SHIELD" -> this.isShield = true;
-            case "FILLED_MAP" -> this.isMap = true;
-        }
-
-        if (this.material.name().contains("BANNER")) {
-            this.isBanner = true;
-        }
+        updateMaterialState(this.material);
 
         return this;
+    }
+
+    /** Updates type-dependent state after resolving or replacing an item. */
+    private void updateMaterialState(final Material material) {
+        this.material = material;
+        this.isHead = material == Material.PLAYER_HEAD;
+        this.isPotion = material == Material.POTION || material == Material.SPLASH_POTION || material == Material.LINGERING_POTION;
+        this.isLeatherArmor = material.name().startsWith("LEATHER_");
+        this.isBanner = material.name().endsWith("_BANNER");
+        this.isShield = material == Material.SHIELD;
+        this.isMap = material == Material.FILLED_MAP;
     }
 
     /**
@@ -763,7 +766,7 @@ public class ItemBuilder {
      */
     public ItemBuilder setEnchantments(final Map<Enchantment, Integer> enchantment) {
         if (enchantment != null) {
-            this.enchantments = enchantment;
+            this.enchantments = new HashMap<>(enchantment);
         }
 
         return this;
@@ -821,6 +824,7 @@ public class ItemBuilder {
      */
     public ItemBuilder setUnbreakable(final boolean unbreakable) {
         this.unbreakable = unbreakable;
+        this.overrideUnbreakable = true;
         return this;
     }
 
@@ -976,15 +980,16 @@ public class ItemBuilder {
                 shieldMeta.setBlockState(banner);
             }
 
-            this.itemMeta.setUnbreakable(this.unbreakable);
+            if (this.overrideUnbreakable) this.itemMeta.setUnbreakable(this.unbreakable);
 
             if (this.useCustomModelData) this.itemMeta.setCustomModelData(this.customModelData);
+
+            if (this.glowing) this.itemMeta.setEnchantmentGlintOverride(true);
 
             this.itemFlags.forEach(this.itemMeta::addItemFlags);
             item.setItemMeta(this.itemMeta);
             hideItemFlags();
             item.addUnsafeEnchantments(this.enchantments);
-            addGlow();
 
             final NBTItem nbt = new NBTItem(item);
 
@@ -1054,14 +1059,14 @@ public class ItemBuilder {
 
     private void updateItemStack(final ItemStack item) {
         if (item != null) {
-            this.itemStack = item;
-            this.itemMeta = item.getItemMeta();
+            this.itemStack = item.clone();
+            this.itemMeta = this.itemStack.getItemMeta();
+            updateMaterialState(this.itemStack.getType());
             this.resolvedCustomItem = true;
             if (!this.overrideName) {
                 final Component name = this.itemMeta.customName() != null ? this.itemMeta.customName() : this.itemMeta.itemName();
                 this.itemName = name == null ? "" : LEGACY_RGB.serialize(name);
             }
-            this.enchantments = item.getEnchantments();
         }
     }
 
@@ -1400,7 +1405,8 @@ public class ItemBuilder {
      */
     @Contract("_ -> this")
     private ItemBuilder setReferenceItem(final ItemStack referenceItem) {
-        this.itemStack = referenceItem;
+        this.itemStack = referenceItem.clone();
+        updateMaterialState(this.itemStack.getType());
         this.itemMeta = this.itemStack.getItemMeta();
         return this;
     }
@@ -1412,20 +1418,6 @@ public class ItemBuilder {
     public ItemBuilder setGlow(final boolean glow) {
         this.glowing = glow;
         return this;
-    }
-
-    /**
-     * Add glow to an item.
-     */
-    private void addGlow() {
-        if (this.glowing) {
-            try {
-                this.itemMeta.addEnchant(Enchantment.LUCK_OF_THE_SEA, 1, false);
-                this.itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                this.itemStack.setItemMeta(this.itemMeta);
-            } catch (final NoClassDefFoundError ignored) {
-            }
-        }
     }
 
     /**
