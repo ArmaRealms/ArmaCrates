@@ -256,10 +256,11 @@ public class CrateBaseCommand extends BaseCommand {
     @SubCommand("tp")
     @Permission(value = "crazycrates.command.admin.teleport", def = PermissionDefault.OP)
     public void onAdminTeleport(final Player player, @Suggestion("locations") final String id) {
-        if (!this.locations.contains("Locations")) {
-            this.locations.set("Locations.Clear", null);
-
-            Files.LOCATIONS.saveFile();
+        synchronized (this.locations) {
+            if (!this.locations.contains("Locations")) {
+                this.locations.set("Locations.Clear", null);
+                Files.LOCATIONS.saveFile();
+            }
         }
 
         for (final String name : this.locations.getConfigurationSection("Locations").getKeys(false)) {

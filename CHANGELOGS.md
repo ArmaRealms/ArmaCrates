@@ -23,6 +23,8 @@
 
 ### Resolvido
 
+- Entregas concorrentes de chaves preservam os saldos no YAML. Escritas são agrupadas e pendências são gravadas no desligamento normal.
+
 - Construção de itens isola cópias e itens importados, preserva encantamentos e indestrutibilidade das integrações salvo substituições explícitas, atualiza o material resolvido e mantém os valores completos no parser de itens.
 
 - `Glowing: true` usa o brilho nativo do Paper sem adicionar encantamentos artificiais nem ocultar os encantamentos reais dos itens Oraxen/ItemEdit. `HideItemFlags` e `Flags` explícitos continuam sendo respeitados.

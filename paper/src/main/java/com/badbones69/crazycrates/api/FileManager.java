@@ -1,19 +1,22 @@
 package com.badbones69.crazycrates.api;
 
 import com.badbones69.crazycrates.CrazyCrates;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -30,6 +33,8 @@ public class FileManager {
     private final Map<String, String> jarHomeFolders = new ConcurrentHashMap<>();
     private final Map<String, String> autoGenerateFiles = new ConcurrentHashMap<>();
     private final Map<Files, FileConfiguration> configurations = new ConcurrentHashMap<>();
+    private final Set<Files> dirtyFiles = ConcurrentHashMap.newKeySet();
+    private final Set<Files> queuedSaves = ConcurrentHashMap.newKeySet();
     private final Logger logger = this.plugin.getLogger();
     private final boolean isLogging = this.plugin.isLogging();
 
@@ -202,10 +207,69 @@ public class FileManager {
      * Saves the file from the loaded state to the file system.
      */
     public void saveFile(final Files file) {
+        this.dirtyFiles.add(file);
+        savePending(file);
+    }
+
+    public void queueSave(final Files file) {
+        this.dirtyFiles.add(file);
+        scheduleSave(file);
+    }
+
+    private void scheduleSave(final Files file) {
+        if (!this.plugin.isEnabled() || !this.queuedSaves.add(file)) return;
+
         try {
-            this.configurations.get(file).save(this.files.get(file));
-        } catch (final IOException exception) {
-            this.logger.log(Level.SEVERE, "Could not save " + file.getFileName() + "!", exception);
+            this.plugin.getServer().getAsyncScheduler().runNow(this.plugin, task -> {
+                final boolean saved;
+                try {
+                    saved = savePending(file);
+                } finally {
+                    this.queuedSaves.remove(file);
+                }
+
+                if (saved && this.dirtyFiles.contains(file)) scheduleSave(file);
+            });
+        } catch (final IllegalPluginAccessException exception) {
+            this.queuedSaves.remove(file);
+            if (this.plugin.isEnabled()) throw exception;
+        }
+    }
+
+    public void flushPendingSaves() {
+        for (final Files file : Files.values()) {
+            savePending(file);
+        }
+    }
+
+    private boolean savePending(final Files file) {
+        synchronized (file) {
+            if (!this.dirtyFiles.remove(file)) return true;
+
+            boolean saved = false;
+            try {
+                final FileConfiguration config = this.configurations.get(file);
+                final String snapshot;
+                // Live YAML readers and writers also lock the configuration. Disk I/O happens outside that lock.
+                synchronized (config) {
+                    snapshot = config.saveToString();
+                }
+                final Path destination = this.files.get(file).toPath();
+                final Path temporary = java.nio.file.Files.createTempFile(destination.getParent(), file.getFileName(), ".tmp");
+                try {
+                    java.nio.file.Files.writeString(temporary, snapshot);
+                    java.nio.file.Files.move(temporary, destination,
+                            StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                    saved = true;
+                } finally {
+                    if (!saved) java.nio.file.Files.deleteIfExists(temporary);
+                }
+            } catch (final IOException exception) {
+                this.logger.log(Level.SEVERE, "Could not save " + file.getFileName() + "!", exception);
+            } finally {
+                if (!saved) this.dirtyFiles.add(file);
+            }
+            return saved;
         }
     }
 
@@ -410,12 +474,6 @@ public class FileManager {
         private final String fileJar;
         private final String fileLocation;
 
-        @NotNull
-        private final CrazyCrates plugin = CrazyCrates.get();
-
-        @NotNull
-        private final FileManager fileManager = this.plugin.getFileManager();
-
         /**
          * The files that the server will try and load.
          *
@@ -472,14 +530,14 @@ public class FileManager {
          * @return the file from the system.
          */
         public FileConfiguration getFile() {
-            return this.fileManager.getFile(this);
+            return CrazyCrates.get().getFileManager().getFile(this);
         }
 
         /**
          * Saves the file from the loaded state to the file system.
          */
         public void saveFile() {
-            Bukkit.getAsyncScheduler().runNow(this.plugin, task -> this.fileManager.saveFile(this));
+            CrazyCrates.get().getFileManager().queueSave(this);
         }
 
         /**
@@ -487,7 +545,7 @@ public class FileManager {
          */
         public void reloadFile() {
             if (getFileName().endsWith(".yml")) {
-                this.fileManager.reloadFile(this);
+                CrazyCrates.get().getFileManager().reloadFile(this);
             }
         }
     }

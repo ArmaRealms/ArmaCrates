@@ -753,8 +753,13 @@ public class CrateManager {
                 this.plugin.getCrateManager().getCrates().stream()
                         .filter(Crate::doNewPlayersGetKeys)
                         .forEach(crate -> {
-                            FileManager.Files.DATA.getFile().set("Players." + uuid + "." + crate.getName(), crate.getNewPlayerKeys());
-                            FileManager.Files.DATA.saveFile();
+                            final FileConfiguration data = Files.DATA.getFile();
+                            synchronized (data) {
+                                final String path = "Players." + uuid + "." + crate.getName();
+                                if (data.contains(path)) return;
+                                data.set(path, crate.getNewPlayerKeys());
+                            }
+                            Files.DATA.saveFile();
                         });
             }
         }
@@ -798,23 +803,25 @@ public class CrateManager {
     public void addCrateLocation(final Location location, final Crate crate) {
         final FileConfiguration locations = Files.LOCATIONS.getFile();
         String id = "1"; // Location ID
+        synchronized (locations) {
 
-        for (int i = 1; locations.contains("Locations." + i); i++) {
-            id = (i + 1) + "";
-        }
-
-        for (final CrateLocation crateLocation : getCrateLocations()) {
-            if (crateLocation.getLocation().equals(location)) {
-                id = crateLocation.getID();
-                break;
+            for (int i = 1; locations.contains("Locations." + i); i++) {
+                id = (i + 1) + "";
             }
-        }
 
-        locations.set("Locations." + id + ".Crate", crate.getName());
-        locations.set("Locations." + id + ".World", location.getWorld().getName());
-        locations.set("Locations." + id + ".X", location.getBlockX());
-        locations.set("Locations." + id + ".Y", location.getBlockY());
-        locations.set("Locations." + id + ".Z", location.getBlockZ());
+            for (final CrateLocation crateLocation : getCrateLocations()) {
+                if (crateLocation.getLocation().equals(location)) {
+                    id = crateLocation.getID();
+                    break;
+                }
+            }
+
+            locations.set("Locations." + id + ".Crate", crate.getName());
+            locations.set("Locations." + id + ".World", location.getWorld().getName());
+            locations.set("Locations." + id + ".X", location.getBlockX());
+            locations.set("Locations." + id + ".Y", location.getBlockY());
+            locations.set("Locations." + id + ".Z", location.getBlockZ());
+        }
         Files.LOCATIONS.saveFile();
 
         addLocation(new CrateLocation(id, crate, location));
@@ -830,7 +837,10 @@ public class CrateManager {
      * @param id the id of the location.
      */
     public void removeCrateLocation(final String id) {
-        Files.LOCATIONS.getFile().set("Locations." + id, null);
+        final FileConfiguration locations = Files.LOCATIONS.getFile();
+        synchronized (locations) {
+            locations.set("Locations." + id, null);
+        }
         Files.LOCATIONS.saveFile();
         CrateLocation location = null;
 
@@ -1063,8 +1073,8 @@ public class CrateManager {
     private void cleanDataFile() {
         try {
             final FileConfiguration data = FileManager.Files.DATA.getFile();
-            if (!data.contains("Players")) {
-                return;
+            synchronized (data) {
+                if (!data.contains("Players")) return;
             }
 
             if (!backupDataFile()) {
@@ -1074,61 +1084,63 @@ public class CrateManager {
 
             this.plugin.debug(() -> "Cleaning up the data.yml file.", Level.INFO);
 
-            final ConfigurationSection playersSection = data.getConfigurationSection("Players");
-            if (playersSection == null) {
-                this.plugin.debug(() -> "The configuration section Players is null.", Level.INFO);
-                return;
-            }
+            synchronized (data) {
+                final ConfigurationSection playersSection = data.getConfigurationSection("Players");
+                if (playersSection == null) {
+                    this.plugin.debug(() -> "The configuration section Players is null.", Level.INFO);
+                    return;
+                }
 
-            final Set<String> reservedNames = Set.of("Name");
-            final Set<String> validCrateNames = new HashSet<>(getCrates().stream().map(Crate::getName).toList());
-            final List<String> removePlayers = new ArrayList<>();
+                final Set<String> reservedNames = Set.of("Name");
+                final Set<String> validCrateNames = new HashSet<>(getCrates().stream().map(Crate::getName).toList());
+                final List<String> removePlayers = new ArrayList<>();
 
-            for (final String uuid : playersSection.getKeys(false)) {
-                final ConfigurationSection playerSection = data.getConfigurationSection("Players." + uuid);
-                if (playerSection == null) continue;
+                for (final String uuid : playersSection.getKeys(false)) {
+                    final ConfigurationSection playerSection = data.getConfigurationSection("Players." + uuid);
+                    if (playerSection == null) continue;
 
-                boolean playerHasValidKeys = false;
+                    boolean playerHasValidKeys = false;
 
-                final List<String> cratesToRemove = new ArrayList<>();
+                    final List<String> cratesToRemove = new ArrayList<>();
 
-                for (final String crateName : playerSection.getKeys(false)) {
-                    if (reservedNames.contains(crateName)) {
-                        continue;
+                    for (final String crateName : playerSection.getKeys(false)) {
+                        if (reservedNames.contains(crateName)) {
+                            continue;
+                        }
+                        if (crateName.equals("tracking")) {
+                            data.set("Players." + uuid + ".tracking", null);
+                        }
+
+                        if (!validCrateNames.contains(crateName)) {
+                            cratesToRemove.add(crateName);
+                            continue;
+                        }
+
+                        final int keys = data.getInt("Players." + uuid + "." + crateName);
+                        if (keys <= 0) {
+                            data.set("Players." + uuid + "." + crateName, null);
+                        } else {
+                            playerHasValidKeys = true;
+                        }
                     }
-                    if (crateName.equals("tracking")) {
-                        data.set("Players." + uuid + ".tracking", null);
-                    }
 
-                    if (!validCrateNames.contains(crateName)) {
-                        cratesToRemove.add(crateName);
-                        continue;
-                    }
+                    // Remove invalid crates and tracking data
+                    cratesToRemove.forEach(crate -> data.set("Players." + uuid + "." + crate, null));
 
-                    final int keys = data.getInt("Players." + uuid + "." + crateName);
-                    if (keys <= 0) {
-                        data.set("Players." + uuid + "." + crateName, null);
-                    } else {
-                        playerHasValidKeys = true;
+                    if (!playerHasValidKeys) {
+                        removePlayers.add(uuid);
                     }
                 }
 
-                // Remove invalid crates and tracking data
-                cratesToRemove.forEach(crate -> data.set("Players." + uuid + "." + crate, null));
+                // Remove players without valid keys or empty data
+                removePlayers.forEach(id -> data.set("Players." + id, null));
 
-                if (!playerHasValidKeys) {
-                    removePlayers.add(uuid);
+                if (!removePlayers.isEmpty()) {
+                    this.plugin.debug(() -> removePlayers.size() + " player's data has been marked to be removed.", Level.INFO);
                 }
+
+                this.plugin.debug(() -> "All empty player data has been removed.", Level.INFO);
             }
-
-            // Remove players without valid keys or empty data
-            removePlayers.forEach(id -> data.set("Players." + id, null));
-
-            if (!removePlayers.isEmpty()) {
-                this.plugin.debug(() -> removePlayers.size() + " player's data has been marked to be removed.", Level.INFO);
-            }
-
-            this.plugin.debug(() -> "All empty player data has been removed.", Level.INFO);
 
             FileManager.Files.DATA.saveFile();
             this.plugin.debug(() -> "The data.yml file has been cleaned.", Level.INFO);
