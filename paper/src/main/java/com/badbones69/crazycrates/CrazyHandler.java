@@ -61,14 +61,17 @@ public class CrazyHandler extends CrazyCratesPlugin {
     }
 
     public void unload() {
+        if (this.fileManager != null) this.fileManager.flushPendingSaves();
         super.disable();
     }
 
     public void cleanFiles() {
-        if (!Files.LOCATIONS.getFile().contains("Locations")) {
-            Files.LOCATIONS.getFile().set("Locations.Clear", null);
-            Files.LOCATIONS.saveFile();
+        final var locations = Files.LOCATIONS.getFile();
+        synchronized (locations) {
+            if (locations.contains("Locations")) return;
+            locations.set("Locations.Clear", null);
         }
+        Files.LOCATIONS.saveFile();
     }
 
     @NotNull
